@@ -17,7 +17,7 @@ class ScriptGenerator {
     if (this.googleKey) {
       this.genAI = new GoogleGenerativeAI(this.googleKey)
       // Updated to use latest Gemini 2.5 Flash model
-      this.googleModel = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+      this.googleModel = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
     }
   }
 
@@ -112,7 +112,7 @@ Format as JSON with detailed scene breakdown:
           body: JSON.stringify({
             // Note: Change to 'o3' when OpenAI releases the model
             // Currently using GPT-4 Turbo which is the most advanced available model
-            model: 'gpt-4-turbo-preview', // Will update to 'o3' when available
+            model: 'gpt-4-turbo', // Will update to 'o3' when available
             messages: [
               {
                 role: 'system',
