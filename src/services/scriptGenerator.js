@@ -110,9 +110,9 @@ Format as JSON with detailed scene breakdown:
           method: 'POST',
           headers,
           body: JSON.stringify({
-            // Using o3-mini model for advanced reasoning capabilities
-            // For higher tier accounts, can change to 'o3' for even better performance
-            model: 'o3-mini', // Using o3-mini for broader availability
+            // Using o3 model for advanced reasoning capabilities
+            // Organization is verified for o3 access
+            model: 'o3', // Full o3 model for maximum performance
             messages: [
               {
                 role: 'system',
@@ -131,6 +131,57 @@ Format as JSON with detailed scene breakdown:
         })
 
         if (!response.ok) {
+          const errorData = await response.json()
+          console.error('OpenAI API error:', errorData)
+          
+          // If o3 is not available yet, try o3-mini
+          if (errorData.error?.code === 'model_not_found' && errorData.error?.message?.includes('o3')) {
+            console.log('o3 not available yet, trying o3-mini...')
+            
+            const miniResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                model: 'o3-mini',
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'You are an expert social media content creator. Always respond with valid JSON.'
+                  },
+                  {
+                    role: 'user',
+                    content: prompt
+                  }
+                ],
+                temperature: 0.8,
+                max_completion_tokens: 1000,
+                response_format: { type: "json_object" },
+                reasoning_effort: "medium"
+              })
+            })
+            
+            if (miniResponse.ok) {
+              const miniData = await miniResponse.json()
+              const scriptData = JSON.parse(miniData.choices[0].message.content)
+              
+              return {
+                success: true,
+                script: {
+                  id: Date.now(),
+                  content: this.formatScriptContent(scriptData),
+                  hook: scriptData.hook,
+                  scenes: scriptData.scenes,
+                  cta: scriptData.cta,
+                  hashtags: scriptData.hashtags,
+                  tone,
+                  platforms,
+                  duration,
+                  generatedBy: 'openai-o3-mini'
+                }
+              }
+            }
+          }
+          
           throw new Error(`OpenAI API error: ${response.status}`)
         }
 
@@ -149,7 +200,7 @@ Format as JSON with detailed scene breakdown:
             tone,
             platforms,
             duration,
-            generatedBy: 'openai-o3-mini'
+            generatedBy: 'openai-o3'
           }
         }
       } catch (error) {
