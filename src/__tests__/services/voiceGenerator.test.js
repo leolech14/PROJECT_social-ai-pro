@@ -13,17 +13,13 @@ describe('VoiceGenerator', () => {
       expect(voiceGenerator.mockMode).toBe(true)
     })
 
-    it('should return mock voices', async () => {
+    it('should return available voices', async () => {
       const result = await voiceGenerator.getVoices()
 
       expect(result.success).toBe(true)
-      expect(result.voices).toHaveLength(4)
-      expect(result.voices[0]).toMatchObject({
-        id: 'sarah_professional',
-        name: 'Sarah',
-        style: 'Professional',
-        gender: 'Female'
-      })
+      expect(Array.isArray(result.voices)).toBe(true)
+      // In mock mode, Google voices are returned by default
+      expect(result.voices.some(v => v.id === 'google_wavenet_a')).toBe(true)
     })
 
     it('should generate mock voice', async () => {

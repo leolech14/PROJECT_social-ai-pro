@@ -165,7 +165,9 @@ const VoiceSelection = ({ onVoiceSelect, selectedVoice, onBack, onNext, userInpu
       const data = await response.json()
       
       if (data.success && data.voice?.audioUrl) {
-        const audio = new Audio(data.voice.audioUrl)
+        // audioUrl may now be a base64 data URL or filesystem path
+        const audioSrc = data.voice.audioUrl
+        const audio = new Audio(audioSrc)
         setCurrentAudio(audio)
         
         audio.onended = () => {

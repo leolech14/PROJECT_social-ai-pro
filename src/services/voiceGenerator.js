@@ -124,9 +124,10 @@ class VoiceGenerator {
           throw new Error(`ElevenLabs voice generation failed: ${response.status}`)
         }
 
-        // In production, save to cloud storage
-        const audioBlob = await response.blob()
-        const audioUrl = URL.createObjectURL(audioBlob)
+        // Node environments don't support createObjectURL; convert to base64 data URL
+        const arrayBuffer = await response.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        const audioUrl = `data:audio/mpeg;base64,${buffer.toString('base64')}`
 
         return {
           success: true,
@@ -177,8 +178,9 @@ class VoiceGenerator {
           throw new Error(`OpenAI TTS failed: ${response.status}`)
         }
 
-        const audioBlob = await response.blob()
-        const audioUrl = URL.createObjectURL(audioBlob)
+        const arrayBuffer = await response.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        const audioUrl = `data:audio/mpeg;base64,${buffer.toString('base64')}`
 
         return {
           success: true,
