@@ -110,6 +110,7 @@ describe('API Endpoints', () => {
     jest.resetModules()
     // Provide a dummy database URL for services that require it
     process.env.DATABASE_URL = 'postgres://user:password@localhost:5432/testdb'
+    process.env.SESSION_SECRET = 'test-session-secret'
 
     // Import server after mocks are set up
     const serverModule = await import('../../../server.js')
