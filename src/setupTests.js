@@ -21,32 +21,29 @@ HTMLCanvasElement.prototype.getContext = () => ({
 })
 
 // Mock framer-motion for tests
-jest.mock('framer-motion', () => {
-  const React = require('react')
-  return {
-    motion: {
-      div: ({ children, ...props }) => {
-        const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
-        return React.createElement('div', rest, children)
-      },
-      button: ({ children, ...props }) => {
-        const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
-        return React.createElement('button', rest, children)
-      },
-      header: ({ children, ...props }) => {
-        const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
-        return React.createElement('header', rest, children)
-      },
-      span: ({ children, ...props }) => {
-        const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
-        return React.createElement('span', rest, children)
-      }
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }) => {
+      const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
+      return mockReact.createElement('div', rest, children)
     },
-    AnimatePresence: ({ children }) => children,
-    useMotionValue: () => ({ set: jest.fn() }),
-    useTransform: () => 0,
-  }
-})
+    button: ({ children, ...props }) => {
+      const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
+      return mockReact.createElement('button', rest, children)
+    },
+    header: ({ children, ...props }) => {
+      const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
+      return mockReact.createElement('header', rest, children)
+    },
+    span: ({ children, ...props }) => {
+      const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
+      return mockReact.createElement('span', rest, children)
+    }
+  },
+  AnimatePresence: ({ children }) => children,
+  useMotionValue: () => ({ set: jest.fn() }),
+  useTransform: () => 0,
+}))
 
 // Mock lucide-react icons to simple svg components
 jest.mock('lucide-react', () => {

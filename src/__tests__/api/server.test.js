@@ -27,7 +27,8 @@ jest.mock('../../services/voiceGenerator.js', () => {
     generateVoice: jest.fn().mockResolvedValue({
       success: true,
       voice: { id: 1, audioUrl: '/test.mp3' }
-    })
+    }),
+    getVoiceInfo: jest.fn().mockResolvedValue({ premium: false })
   }))
 })
 
@@ -80,18 +81,18 @@ describe('API Endpoints', () => {
       expect(response.body.script).toBeDefined()
     })
 
-    it('should return 400 for missing fields', async () => {
-      const response = await request(app)
-        .post('/api/generate-script')
-        .send({
-          description: 'Test video'
-          // Missing required fields
-        })
-      
-      expect(response.status).toBe(400)
-      expect(response.body.success).toBe(false)
-      expect(response.body.error).toBe('Missing required fields')
-    })
+      it('should return validation errors for missing fields', async () => {
+        const response = await request(app)
+          .post('/api/generate-script')
+          .send({
+            description: 'Test video'
+          })
+
+        expect(response.status).toBe(400)
+        expect(response.body.success).toBe(false)
+        expect(response.body.error).toBe('Validation error')
+        expect(Array.isArray(response.body.details)).toBe(true)
+      })
   })
 
   describe('GET /api/voices', () => {
@@ -119,17 +120,17 @@ describe('API Endpoints', () => {
       expect(response.body.voice).toBeDefined()
     })
 
-    it('should return 400 for missing fields', async () => {
-      const response = await request(app)
-        .post('/api/generate-voice')
-        .send({
-          scriptId: 123
-          // Missing voiceId and text
-        })
-      
-      expect(response.status).toBe(400)
-      expect(response.body.error).toBe('Missing required fields')
-    })
+      it('should return validation errors for missing fields', async () => {
+        const response = await request(app)
+          .post('/api/generate-voice')
+          .send({
+            scriptId: 123
+          })
+
+        expect(response.status).toBe(400)
+        expect(response.body.error).toBe('Validation error')
+        expect(Array.isArray(response.body.details)).toBe(true)
+      })
   })
 
   describe('POST /api/search-media', () => {
@@ -147,16 +148,17 @@ describe('API Endpoints', () => {
       expect(response.body.videos).toBeDefined()
     })
 
-    it('should return 400 for missing query', async () => {
-      const response = await request(app)
-        .post('/api/search-media')
-        .send({
-          type: 'video'
-        })
-      
-      expect(response.status).toBe(400)
-      expect(response.body.error).toBe('Query is required')
-    })
+      it('should return validation errors for missing query', async () => {
+        const response = await request(app)
+          .post('/api/search-media')
+          .send({
+            type: 'video'
+          })
+
+        expect(response.status).toBe(400)
+        expect(response.body.error).toBe('Validation error')
+        expect(Array.isArray(response.body.details)).toBe(true)
+      })
   })
 
   describe('POST /api/auth/login', () => {
