@@ -8,7 +8,13 @@ import MediaService from './src/services/mediaService.js'
 import AuthService from './src/services/authService.js'
 import DemoGenerator from './src/services/demoGenerator.js'
 import { authenticateToken, checkVideoLimit, optionalAuth } from './src/middleware/auth.js'
-import { apiLimiter, authLimiter, videoGenerationLimiter, scriptGenerationLimiter } from './src/middleware/rateLimiter.js'
+import {
+  apiLimiter,
+  authLimiter,
+  loginLimiter,
+  videoGenerationLimiter,
+  scriptGenerationLimiter
+} from './src/middleware/rateLimiter.js'
 
 dotenv.config()
 
@@ -71,7 +77,7 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
   }
 })
 
-app.post('/api/auth/login', authLimiter, async (req, res) => {
+app.post('/api/auth/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body
     

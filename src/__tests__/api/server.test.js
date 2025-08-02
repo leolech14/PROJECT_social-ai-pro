@@ -157,4 +157,27 @@ describe('API Endpoints', () => {
       expect(response.body.error).toBe('Query is required')
     })
   })
+
+  describe('POST /api/auth/login', () => {
+    it('should rate limit repeated successful login attempts', async () => {
+      const credentials = { email: 'test@example.com', password: 'password', name: 'Tester' }
+
+      // register user first
+      await request(app).post('/api/auth/register').send(credentials)
+
+      // first 5 logins succeed
+      for (let i = 0; i < 5; i++) {
+        const res = await request(app).post('/api/auth/login').send({ email: credentials.email, password: credentials.password })
+        expect(res.status).toBe(200)
+      }
+
+      // 6th attempt should be rate limited
+      const limited = await request(app)
+        .post('/api/auth/login')
+        .send({ email: credentials.email, password: credentials.password })
+
+      expect(limited.status).toBe(429)
+      expect(limited.body.success).toBe(false)
+    })
+  })
 })
