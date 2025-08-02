@@ -89,6 +89,13 @@ See `.env.example` for all available configuration options:
 - `PEXELS_API_KEY` - For stock footage (optional)
 - `VITE_API_URL` - Backend API URL
 
+## 🗃️ Session Storage
+
+Server sessions are stored in PostgreSQL using `connect-pg-simple`. Set
+`DATABASE_URL` in your environment to point at your Postgres instance. The
+session table is created automatically on startup, or you can create it
+manually using the SQL in [`docs/SESSION_TABLE_SETUP.md`](docs/SESSION_TABLE_SETUP.md).
+
 ## 🎨 UI/UX Features
 
 - **Dark Glassmorphic Design**: Modern, premium aesthetic

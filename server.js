@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import session from 'express-session'
+import connectPgSimple from 'connect-pg-simple'
 import ScriptGenerator from './src/services/scriptGenerator.js'
 import VoiceGenerator from './src/services/voiceGenerator.js'
 import MediaService from './src/services/mediaService.js'
@@ -21,6 +22,8 @@ dotenv.config()
 const app = express()
 const PORT = process.env.BACKEND_PORT || process.env.PORT || 4444
 
+const pgSession = connectPgSimple(session)
+
 // Initialize services
 const scriptGenerator = new ScriptGenerator()
 const voiceGenerator = new VoiceGenerator()
@@ -37,6 +40,10 @@ app.use(express.json())
 
 // Session configuration
 app.use(session({
+  store: new pgSession({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true
+  }),
   secret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
