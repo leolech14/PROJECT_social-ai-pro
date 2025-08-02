@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codex Analysis Dashboard - Task Selection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 12px;
+            border: 1px solid #2a2a3e;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 1.1em;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .analysis-card {
+            background: #1a1a2e;
+            border: 1px solid #2a2a3e;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .analysis-card:hover {
+            border-color: #3a3a4e;
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.1);
+        }
+
+        .analysis-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #2a2a3e;
+        }
+
+        .analysis-number {
+            font-size: 2em;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .task-count {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .task {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #0f0f1f;
+            border-radius: 8px;
+            border: 1px solid #2a2a3e;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .task.recommended {
+            border-color: #00d4ff;
+            background: linear-gradient(135deg, #0f0f1f 0%, #0a1a2a 100%);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+
+        .task.recommended::before {
+            content: '✓ RECOMMENDED';
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 0.8em;
+            color: #00ff88;
+            font-weight: bold;
+            background: rgba(0, 255, 136, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .task.skip {
+            opacity: 0.5;
+            border-color: #333;
+        }
+
+        .task.skip::after {
+            content: '⨯ SKIP (Duplicate/Conflict)';
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 0.8em;
+            color: #ff4444;
+            font-weight: bold;
+        }
+
+        .task-title {
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .task-description {
+            color: #888;
+            font-size: 0.95em;
+            margin-bottom: 10px;
+        }
+
+        .task-action {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #2a2a3e;
+            border: 1px solid #3a3a4e;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        .task.recommended .task-action {
+            background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+            border: none;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .task.recommended .task-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
+        }
+
+        .summary {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 1px solid #2a2a3e;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .summary h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 3em;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .priority-legend {
+            margin-top: 30px;
+            padding: 20px;
+            background: #0f0f1f;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .priority-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .priority-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .critical { background: #ff4444; }
+        .high { background: #ff8844; }
+        .medium { background: #ffcc44; }
+        .low { background: #44ff44; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Codex Analysis Dashboard</h1>
+        <p>Optimal task selection from 4 parallel analyses to avoid conflicts</p>
+    </div>
+
+    <div class="analysis-grid">
+        <!-- Analysis 1 -->
+        <div class="analysis-card">
+            <div class="analysis-header">
+                <div class="analysis-number">Analysis 1</div>
+                <div class="task-count">9 tasks</div>
+            </div>
+            
+            <div class="task skip">
+                <div class="task-title">Secure Express session configuration</div>
+                <div class="task-description">server.js defaults to a built‑in secret and omits a persistent session store, leaving sessions vulnerable to tampering and loss on restart</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Require environment-based JWT secret</div>
+                <div class="task-description">AuthService ships with a default JWT secret that should be provided at runtime</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Externalize OpenAI organization ID</div>
+                <div class="task-description">Several services embed a fixed OpenAI-Organization header, making it impossible to configure per environment</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task recommended">
+                <div class="task-title">Add robust request validation</div>
+                <div class="task-description">The API only checks for presence of fields, lacking type and length validation</div>
+                <div class="task-action">START TASK</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Return client-accessible voice files</div>
+                <div class="task-description">voiceGenerator.js returns URL.createObjectURL results, which are not accessible to clients once the process exits</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task recommended">
+                <div class="task-title">Replace alerts with UI error messaging</div>
+                <div class="task-description">User-facing errors are delivered via blocking browser alerts, leading to poor UX</div>
+                <div class="task-action">START TASK</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Ensure trailing newlines in source files</div>
+                <div class="task-description">Examples include VoiceSelector.jsx and server.js, which end without a newline</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Expand service test coverage</div>
+                <div class="task-description">Only scriptGenerator and voiceGenerator services are covered, leaving gaps for authentication and media logic</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Refactor App.jsx into smaller components</div>
+                <div class="task-description">The main React component mixes multiple responsibilities in nearly 1,000 lines</div>
+                <div class="task-action">Start task</div>
+            </div>
+        </div>
+
+        <!-- Analysis 2 -->
+        <div class="analysis-card">
+            <div class="analysis-header">
+                <div class="analysis-number">Analysis 2</div>
+                <div class="task-count">7 tasks</div>
+            </div>
+            
+            <div class="task recommended">
+                <div class="task-title">Replace browser-specific audio handling with Node-compatible logic</div>
+                <div class="task-description">URL.createObjectURL is used to build audio URLs when generating voices, but this API does not exist in Node.js runtimes</div>
+                <div class="task-action">START TASK</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Enforce environment-based secrets for auth and session</div>
+                <div class="task-description">Default JWT and session secrets are embedded, risking accidental use in production</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Introduce persistent, indexed user storage</div>
+                <div class="task-description">Users are stored in a single Map keyed by email; getUserById performs linear searches, and data is lost on restart</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task recommended">
+                <div class="task-title">Configure persistent session storage</div>
+                <div class="task-description">Express sessions use the default MemoryStore, which does not scale and leaks memory on server restarts</div>
+                <div class="task-action">START TASK</div>
+            </div>
+
+            <div class="task recommended">
+                <div class="task-title">Prevent server from listening during tests</div>
+                <div class="task-description">app.listen executes whenever NODE_ENV !== 'production', causing ports to open in test environments</div>
+                <div class="task-action">START TASK</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Add audio cleanup on component unmount</div>
+                <div class="task-description">The VoiceSelector component creates audio objects but does not stop playback when the component unmounts, risking memory leaks and dangling audio</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Ensure newline at end of every source file</div>
+                <div class="task-description">Several files end without a newline (e.g., server.js, src/services/*, src/middleware/*, src/components/VoiceSelector.jsx, tests), violating POSIX conventions and causing odd prompt concatenation in terminal output.</div>
+                <div class="task-action">Start task</div>
+            </div>
+        </div>
+
+        <!-- Analysis 3 -->
+        <div class="analysis-card">
+            <div class="analysis-header">
+                <div class="analysis-number">Analysis 3</div>
+                <div class="task-count">7 tasks</div>
+            </div>
+            
+            <div class="task skip">
+                <div class="task-title">Share a single AuthService instance across middleware and server</div>
+                <div class="task-description">Authentication middleware uses a separate AuthService instance, causing user data (e.g., video limits) to be inconsistent.</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Replace browser-only APIs in voice generation</div>
+                <div class="task-description">VoiceGenerator.generateVoice relies on URL.createObjectURL, which is unavailable in Node environments.</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task recommended">
+                <div class="task-title">Decompose large React components into modular units</div>
+                <div class="task-description">src/App.jsx (~994 lines) and src/components/VoiceSelector.jsx (~605 lines) are monolithic, making maintenance difficult.</div>
+                <div class="task-action">START TASK</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Add trailing newline to source files</div>
+                <div class="task-description">Many files lack a trailing newline, violating common style conventions (e.g., server.js, src/App.jsx, src/components/VoiceSelector.jsx, src/services/*.js, test files).</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task recommended">
+                <div class="task-title">Modularize Express routes</div>
+                <div class="task-description">server.js bundles all route handlers, leading to a 350+ line file that's hard to navigate.</div>
+                <div class="task-action">START TASK</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Expand automated test coverage</div>
+                <div class="task-description">Test coverage is limited; middleware and some services lack direct tests.</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Enforce environment-based secrets</div>
+                <div class="task-description">Default secrets (e.g., JWT_SECRET, session secret) are hard-coded fallback values, posing security risk if used in production.</div>
+                <div class="task-action">Start task</div>
+            </div>
+        </div>
+
+        <!-- Analysis 4 -->
+        <div class="analysis-card">
+            <div class="analysis-header">
+                <div class="analysis-number">Analysis 4</div>
+                <div class="task-count">6 tasks</div>
+            </div>
+            
+            <div class="task skip">
+                <div class="task-title">Enforce environment-based session secret</div>
+                <div class="task-description">server.js provides a default session secret, which could lead to compromised sessions if environment variables are misconfigured</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task recommended">
+                <div class="task-title">Require JWT secret from environment</div>
+                <div class="task-description">AuthService defaults to a built-in JWT secret instead of requiring configuration, weakening token security</div>
+                <div class="task-action">START TASK</div>
+            </div>
+
+            <div class="task recommended">
+                <div class="task-title">Persist user accounts in a database</div>
+                <div class="task-description">User accounts are kept in a Map, which is lost on restart and unsuitable for scaling or auditing</div>
+                <div class="task-action">START TASK</div>
+            </div>
+
+            <div class="task recommended">
+                <div class="task-title">Parameterize OpenAI organization header</div>
+                <div class="task-description">The OpenAI request embeds a fixed organization ID rather than using configuration, limiting flexibility and exposing internal identifiers</div>
+                <div class="task-action">START TASK</div>
+            </div>
+
+            <div class="task skip">
+                <div class="task-title">Validate voice-preview responses</div>
+                <div class="task-description">The VoiceSelector component parses the response body without confirming the HTTP status, risking runtime errors on non‑200 responses</div>
+                <div class="task-action">Start task</div>
+            </div>
+
+            <div class="task recommended">
+                <div class="task-title">Count successful auth requests</div>
+                <div class="task-description">authLimiter ignores successful requests, allowing an attacker to rotate valid credentials without hitting rate limits</div>
+                <div class="task-action">START TASK</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="summary">
+        <h2>Task Selection Summary</h2>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value">10</div>
+                <div class="stat-label">Recommended Tasks</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">19</div>
+                <div class="stat-label">Skipped (Duplicates)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">29</div>
+                <div class="stat-label">Total Tasks</div>
+            </div>
+        </div>
+
+        <div class="priority-legend">
+            <div class="priority-item">
+                <div class="priority-dot critical"></div>
+                <span>Critical Security</span>
+            </div>
+            <div class="priority-item">
+                <div class="priority-dot high"></div>
+                <span>High Priority</span>
+            </div>
+            <div class="priority-item">
+                <div class="priority-dot medium"></div>
+                <span>Medium Priority</span>
+            </div>
+            <div class="priority-item">
+                <div class="priority-dot low"></div>
+                <span>Low Priority</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add click handlers for recommended tasks
+        document.querySelectorAll('.task.recommended .task-action').forEach(button => {
+            button.addEventListener('click', function() {
+                const taskTitle = this.parentElement.querySelector('.task-title').textContent;
+                console.log('Starting task:', taskTitle);
+                this.textContent = 'RUNNING...';
+                this.style.background = '#44ff44';
+                this.style.cursor = 'not-allowed';
+            });
+        });
+
+        // Animate recommended tasks
+        const recommendedTasks = document.querySelectorAll('.task.recommended');
+        recommendedTasks.forEach((task, index) => {
+            task.style.animation = `pulse 2s ease-in-out ${index * 0.1}s infinite`;
+        });
+
+        // Add pulse animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.02); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

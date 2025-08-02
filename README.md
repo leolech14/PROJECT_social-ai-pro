@@ -1,8 +1,9 @@
-# 🎬 Social AI Pro - AI-Powered Video Creator
+# 🎬 AI Video Creator - Social Media Content Generation Platform
 
-Transform your ideas into viral social media videos with AI-powered intelligence. Create engaging content for TikTok, Instagram, and YouTube in minutes.
+An advanced AI-powered platform for creating viral social media videos. Transform your ideas into engaging content for TikTok, Instagram Reels, and YouTube Shorts using cutting-edge AI technologies.
 
-🌐 **Live at**: [social-ai.pro](https://social-ai.pro)
+🌐 **Live Demo**: [social-ai.pro](https://social-ai.pro)
+📚 **Documentation**: [View Docs](./docs/)
 
 ## ✨ Features
 
