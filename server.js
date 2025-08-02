@@ -343,7 +343,7 @@ app.post('/api/assemble-video', videoGenerationLimiter, authenticateToken, check
 })
 
 // Only listen if not in serverless environment
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`✨ AI Video Creator API running on http://localhost:${PORT}`)
   })
