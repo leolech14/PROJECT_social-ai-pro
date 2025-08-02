@@ -2,10 +2,19 @@ import VoiceGenerator from '../../services/voiceGenerator'
 
 describe('VoiceGenerator', () => {
   let voiceGenerator
+  const originalFetch = global.fetch
 
   beforeEach(() => {
     delete process.env.ELEVENLABS_API_KEY
+    delete process.env.OPENAI_API_KEY
+    process.env.VOICE_CACHE_TTL = '10000'
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ voices: [] }) })
     voiceGenerator = new VoiceGenerator()
+  })
+
+  afterEach(() => {
+    delete process.env.VOICE_CACHE_TTL
+    global.fetch = originalFetch
   })
 
   describe('Mock Mode', () => {
@@ -58,6 +67,33 @@ describe('VoiceGenerator', () => {
       })
 
       expect(longResult.voice.duration).toBeGreaterThan(shortResult.voice.duration)
+    })
+  })
+
+  describe('Caching', () => {
+    it('should cache voices within TTL', async () => {
+      process.env.ELEVENLABS_API_KEY = 'key1'
+      const vg = new VoiceGenerator()
+
+      const first = await vg.getVoices()
+      const second = await vg.getVoices()
+
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+      expect(second).toBe(first)
+    })
+
+    it('should invalidate cache when API keys change', async () => {
+      process.env.ELEVENLABS_API_KEY = 'key1'
+      const vg = new VoiceGenerator()
+
+      const first = await vg.getVoices()
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+
+      process.env.ELEVENLABS_API_KEY = 'key2'
+      const second = await vg.getVoices()
+
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+      expect(second).not.toBe(first)
     })
   })
 })

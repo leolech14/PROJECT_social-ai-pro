@@ -4,15 +4,34 @@ class VoiceGenerator {
     this.openaiKey = process.env.OPENAI_API_KEY
     this.elevenlabsUrl = 'https://api.elevenlabs.io/v1'
     this.openaiUrl = 'https://api.openai.com/v1'
-    
+
     this.mockMode = !this.elevenlabsKey && !this.openaiKey
-    
+
+    // Cache for getVoices results
+    this.cacheTTL = parseInt(process.env.VOICE_CACHE_TTL || '3600000', 10) // Default 1 hour
+    this.voiceCache = null
+
     if (this.mockMode) {
       console.warn('No voice API keys set, using mock mode')
     }
   }
 
   async getVoices() {
+    // Refresh keys from environment and invalidate cache if they change
+    const currentElevenlabsKey = process.env.ELEVENLABS_API_KEY
+    const currentOpenaiKey = process.env.OPENAI_API_KEY
+    if (currentElevenlabsKey !== this.elevenlabsKey || currentOpenaiKey !== this.openaiKey) {
+      this.elevenlabsKey = currentElevenlabsKey
+      this.openaiKey = currentOpenaiKey
+      this.mockMode = !this.elevenlabsKey && !this.openaiKey
+      this.voiceCache = null
+    }
+
+    const now = Date.now()
+    if (this.voiceCache && now - this.voiceCache.timestamp < this.cacheTTL) {
+      return this.voiceCache.data
+    }
+
     const voices = []
     
     // Get ElevenLabs voices
@@ -82,14 +101,17 @@ class VoiceGenerator {
     voices.push(...googleVoices)
     
     // If no API voices available, return mock voices
+    let result
     if (voices.length === 0) {
-      return this.getMockVoices()
+      result = this.getMockVoices()
+    } else {
+      result = {
+        success: true,
+        voices
+      }
     }
-    
-    return {
-      success: true,
-      voices
-    }
+    this.voiceCache = { timestamp: now, data: result }
+    return result
   }
 
   async generateVoice({ text, voiceId, scriptId, userId, voiceInstruction, isDemo = false }) {
