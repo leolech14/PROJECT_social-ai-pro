@@ -19,9 +19,9 @@ describe('VoiceGenerator', () => {
       expect(result.success).toBe(true)
       expect(result.voices).toHaveLength(4)
       expect(result.voices[0]).toMatchObject({
-        id: 'sarah_professional',
-        name: 'Sarah',
-        style: 'Professional',
+        id: 'google_wavenet_a',
+        name: 'WaveNet A',
+        style: 'Natural',
         gender: 'Female'
       })
     })

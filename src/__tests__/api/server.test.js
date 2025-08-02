@@ -1,5 +1,4 @@
 import request from 'supertest'
-import express from 'express'
 
 // Mock the services
 jest.mock('../../services/scriptGenerator.js', () => {
@@ -23,6 +22,7 @@ jest.mock('../../services/voiceGenerator.js', () => {
       success: true,
       voices: [{ id: 'test', name: 'Test Voice' }]
     }),
+    getVoiceInfo: jest.fn().mockResolvedValue({ premium: false }),
     generateVoice: jest.fn().mockResolvedValue({
       success: true,
       voice: { id: 1, audioUrl: '/test.mp3' }
@@ -45,6 +45,7 @@ describe('API Endpoints', () => {
   beforeEach(async () => {
     // Clear module cache to get fresh instance
     jest.resetModules()
+    jest.clearAllMocks()
     
     // Import server after mocks are set up
     const serverModule = await import('../../../server.js')
