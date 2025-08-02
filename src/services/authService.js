@@ -6,7 +6,15 @@ class AuthService {
   constructor() {
     this.jwtSecret = process.env.JWT_SECRET
     if (!this.jwtSecret) {
-      throw new Error('JWT_SECRET environment variable is required')
+      const message =
+        'JWT_SECRET environment variable is required for authentication'
+
+      if (process.env.NODE_ENV === 'test') {
+        throw new Error(message)
+      }
+
+      console.error(`[AuthService] ${message}`)
+      process.exit(1)
     }
     this.jwtExpiry = '7d'
     this.saltRounds = 10
