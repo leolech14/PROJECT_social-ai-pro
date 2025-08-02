@@ -10,9 +10,9 @@
     "build": "vite build",
     "lint": "eslint . --ext .js,.jsx",
     "preview": "vite preview",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test": "NODE_ENV=test jest",
+    "test:watch": "NODE_ENV=test jest --watch",
+    "test:coverage": "NODE_ENV=test jest --coverage"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
