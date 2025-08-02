@@ -99,6 +99,8 @@ git push -u origin main
 Add these in Vercel dashboard → Settings → Environment Variables:
 ```
 NODE_ENV=production
+# Required for session encryption
+SESSION_SECRET=your_session_secret
 # Add any API keys here
 ```
 

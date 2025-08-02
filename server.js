@@ -30,6 +30,10 @@ import {
 
 dotenv.config()
 
+if (!process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET environment variable is required')
+}
+
 const app = express()
 const PORT = process.env.BACKEND_PORT || process.env.PORT || 4444
 
@@ -55,7 +59,7 @@ app.use(session({
     conString: process.env.DATABASE_URL,
     createTableIfMissing: true
   }),
-  secret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {

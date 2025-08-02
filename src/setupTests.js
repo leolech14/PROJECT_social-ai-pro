@@ -6,6 +6,9 @@ import { TextEncoder, TextDecoder } from 'util'
 global.TextEncoder = TextEncoder
 global.TextDecoder = TextDecoder
 
+// Mock scrollIntoView used in App component
+HTMLElement.prototype.scrollIntoView = jest.fn()
+
 // Minimal canvas mock for tests
 HTMLCanvasElement.prototype.getContext = () => ({
   clearRect: jest.fn(),
@@ -20,30 +23,25 @@ HTMLCanvasElement.prototype.getContext = () => ({
   lineWidth: 1
 })
 
-// Mock framer-motion for tests
-jest.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }) => {
-      const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
-      return mockReact.createElement('div', rest, children)
-    },
-    button: ({ children, ...props }) => {
-      const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
-      return mockReact.createElement('button', rest, children)
-    },
-    header: ({ children, ...props }) => {
-      const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
-      return mockReact.createElement('header', rest, children)
-    },
-    span: ({ children, ...props }) => {
-      const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
-      return mockReact.createElement('span', rest, children)
+// Mock framer-motion for tests with a generic element proxy
+jest.mock('framer-motion', () => {
+  const motionProxy = new Proxy(
+    {},
+    {
+      get: (target, prop) => ({ children, ...props }) => {
+        const { initial, animate, exit, transition, whileHover, whileTap, ...rest } = props
+        return mockReact.createElement(prop, rest, children)
+      }
     }
-  },
-  AnimatePresence: ({ children }) => children,
-  useMotionValue: () => ({ set: jest.fn() }),
-  useTransform: () => 0,
-}))
+  )
+
+  return {
+    motion: motionProxy,
+    AnimatePresence: ({ children }) => children,
+    useMotionValue: () => ({ set: jest.fn() }),
+    useTransform: () => 0,
+  }
+})
 
 // Mock lucide-react icons to simple svg components
 jest.mock('lucide-react', () => {
