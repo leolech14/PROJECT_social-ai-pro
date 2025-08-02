@@ -124,7 +124,7 @@ Format as JSON with detailed scene breakdown:
               }
             ],
             temperature: 0.8,
-            max_tokens: 1000,
+            max_completion_tokens: 1000, // o3 uses max_completion_tokens instead of max_tokens
             response_format: { type: "json_object" },
             reasoning_effort: "medium" // o3 specific parameter for reasoning depth
           })
