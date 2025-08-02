@@ -3,7 +3,10 @@ import jwt from 'jsonwebtoken'
 
 class AuthService {
   constructor() {
-    this.jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+    this.jwtSecret = process.env.JWT_SECRET
+    if (!this.jwtSecret) {
+      throw new Error('JWT_SECRET environment variable is required')
+    }
     this.jwtExpiry = '7d'
     this.saltRounds = 10
   }
