@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Mic, Sparkles, Video, Wand2, Zap, Play, ChevronDown, Film, Palette, Clock, Camera, Music, Share2, ArrowDown } from 'lucide-react'
 import VoiceSelector from './components/VoiceSelector'
+import ErrorNotification from './components/ErrorNotification'
 import './App.css'
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
   const [selectedMedia, setSelectedMedia] = useState(null)
   const [selectedMusic, setSelectedMusic] = useState(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [error, setError] = useState(null)
   
   // Refs for smooth scrolling
   const inputSectionRef = useRef(null)
@@ -30,12 +32,13 @@ function App() {
 
   const handleScriptGeneration = async () => {
     if (!inputText.trim() || selectedPlatforms.length === 0 || !selectedTone) {
-      alert('Please fill in all required fields')
+      setError('Please fill in all required fields')
       return
     }
 
     setIsGenerating(true)
-    
+    setError(null)
+
     try {
       const response = await fetch('/api/generate-script', {
         method: 'POST',
@@ -54,11 +57,11 @@ function App() {
         setGeneratedScript(data.script)
         setStage(2) // Skip to script review
       } else {
-        alert('Failed to generate script: ' + data.error)
+        setError('Failed to generate script: ' + data.error)
       }
     } catch (error) {
       console.error('Script generation error:', error)
-      alert('Failed to generate script')
+      setError('Failed to generate script')
     } finally {
       setIsGenerating(false)
     }
@@ -66,12 +69,13 @@ function App() {
 
   const handleVoiceGeneration = async () => {
     if (!selectedVoice || !generatedScript) {
-      alert('Please select a voice and ensure script is generated')
+      setError('Please select a voice and ensure script is generated')
       return
     }
 
     setIsGenerating(true)
-    
+    setError(null)
+
     try {
       const response = await fetch('/api/generate-voice', {
         method: 'POST',
@@ -95,11 +99,11 @@ function App() {
         })
         setStage(4) // Go to video assembly
       } else {
-        alert('Failed to generate voice: ' + data.error)
+        setError('Failed to generate voice: ' + data.error)
       }
     } catch (error) {
       console.error('Voice generation error:', error)
-      alert('Failed to generate voice')
+      setError('Failed to generate voice')
     } finally {
       setIsGenerating(false)
     }
@@ -225,11 +229,17 @@ function App() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white relative">
       {/* Animated Background Canvas */}
-      <canvas 
+      <canvas
         ref={canvasRef}
         className="fixed top-0 left-0 w-full h-full z-0"
         style={{ background: '#0a0a0a' }}
       />
+
+      {error && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-11/12 max-w-lg">
+          <ErrorNotification message={error} onClose={() => setError(null)} />
+        </div>
+      )}
 
       {/* Hero Section */}
       <AnimatePresence>
