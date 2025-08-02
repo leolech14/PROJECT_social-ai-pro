@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 4445",
-    "server": "PORT=4444 node server.js",
+    "server": "JWT_SECRET=dev-secret-key PORT=4444 node server.js",
     "dev:all": "concurrently \"npm run dev\" \"npm run server\"",
     "build": "vite build",
     "lint": "eslint . --ext .js,.jsx",
