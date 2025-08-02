@@ -9,18 +9,18 @@ describe('App Component', () => {
     fetch.mockClear()
   })
 
-  it('renders the initial stage with title', () => {
+  it('renders the initial hero screen', () => {
     render(<App />)
-    
-    expect(screen.getByText('AI Video')).toBeInTheDocument()
-    expect(screen.getByText('Creator')).toBeInTheDocument()
-    expect(screen.getByText('Describe Your Video')).toBeInTheDocument()
+
+    expect(screen.getByText('Social Media Science')).toBeInTheDocument()
+    expect(screen.getByText('Start Creating')).toBeInTheDocument()
   })
 
   it('shows configuration options when text is entered', async () => {
     render(<App />)
-    
-    const textarea = screen.getByPlaceholderText('Tell me about the video you want to create...')
+
+    fireEvent.click(screen.getByText('Start Creating'))
+    const textarea = screen.getByPlaceholderText('e.g., How to make perfect coffee at home')
     fireEvent.change(textarea, { target: { value: 'Test video content' } })
     
     await waitFor(() => {
@@ -32,9 +32,11 @@ describe('App Component', () => {
 
   it('enables generate button when all fields are filled', async () => {
     render(<App />)
-    
+
+    fireEvent.click(screen.getByText('Start Creating'))
+
     // Enter text
-    const textarea = screen.getByPlaceholderText('Tell me about the video you want to create...')
+    const textarea = screen.getByPlaceholderText('e.g., How to make perfect coffee at home')
     fireEvent.change(textarea, { target: { value: 'Test video' } })
     
     // Wait for config to show
@@ -51,7 +53,7 @@ describe('App Component', () => {
     fireEvent.click(tiktokButton)
     
     // Check button is enabled
-    const generateButton = screen.getByText('Generate Script')
+    const generateButton = screen.getByText('Generate Smart Script')
     expect(generateButton.closest('button')).not.toBeDisabled()
   })
 
@@ -72,9 +74,11 @@ describe('App Component', () => {
     })
 
     render(<App />)
-    
+
+    fireEvent.click(screen.getByText('Start Creating'))
+
     // Fill in required fields
-    const textarea = screen.getByPlaceholderText('Tell me about the video you want to create...')
+    const textarea = screen.getByPlaceholderText('e.g., How to make perfect coffee at home')
     fireEvent.change(textarea, { target: { value: 'Test video' } })
     
     await waitFor(() => {
@@ -85,29 +89,50 @@ describe('App Component', () => {
     fireEvent.click(screen.getByText(/TikTok|Tik/i))
     
     // Click generate
-    const generateButton = screen.getByText('Generate Script')
+    const generateButton = screen.getByText('Generate Smart Script')
     fireEvent.click(generateButton.closest('button'))
     
     // Should show loading state
     expect(screen.getByText('Generating...')).toBeInTheDocument()
   })
 
-  it('displays stage indicators correctly', () => {
+  it('displays stage indicators correctly', async () => {
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        script: {
+          id: 1,
+          content: 'Generated script',
+          tone: 'Professional',
+          duration: 30,
+          platforms: ['TikTok']
+        }
+      })
+    })
+
     render(<App />)
-    
-    const stages = ['Script Creation', 'Voice Selection', 'Video Assembly']
-    
-    // Check all stages are shown
-    stages.forEach((stage, index) => {
-      const stageNumber = (index + 1).toString()
-      expect(screen.getByText(stageNumber)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Start Creating'))
+    const textarea = screen.getByPlaceholderText('e.g., How to make perfect coffee at home')
+    fireEvent.change(textarea, { target: { value: 'Test video' } })
+    await waitFor(() => expect(screen.getByText('Tone')).toBeInTheDocument())
+    fireEvent.click(screen.getByText('Professional'))
+    fireEvent.click(screen.getByText(/TikTok|Tik/i))
+    fireEvent.click(screen.getByText('Generate Smart Script'))
+
+    await waitFor(() => {
+      expect(screen.getByText('2')).toBeInTheDocument()
+      expect(screen.getByText('3')).toBeInTheDocument()
     })
   })
 
   it('toggles platform selection', async () => {
     render(<App />)
-    
-    const textarea = screen.getByPlaceholderText('Tell me about the video you want to create...')
+
+    fireEvent.click(screen.getByText('Start Creating'))
+
+    const textarea = screen.getByPlaceholderText('e.g., How to make perfect coffee at home')
     fireEvent.change(textarea, { target: { value: 'Test' } })
     
     await waitFor(() => {
