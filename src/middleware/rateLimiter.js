@@ -19,8 +19,18 @@ export const authLimiter = rateLimit({
   message: {
     success: false,
     error: 'Too many authentication attempts, please try again later'
-  },
-  skipSuccessfulRequests: true, // Don't count successful requests
+  }
+})
+
+// Optional separate limiter specifically for login attempts
+// Adjust windowMs/max values if login needs stricter control
+export const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: {
+    success: false,
+    error: 'Too many login attempts, please try again later'
+  }
 })
 
 // Video generation rate limiter
