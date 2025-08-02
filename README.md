@@ -83,6 +83,7 @@ npm run preview
 
 See `.env.example` for all available configuration options:
 
+- `SESSION_SECRET` - Secret key for session cookies (required)
 - `OPENAI_API_KEY` - For OpenAI script generation (optional)
 - `OPENAI_ORG_ID` - OpenAI organization ID (optional)
 - `GOOGLE_AI_API_KEY` - For script generation

@@ -85,6 +85,7 @@ describe('ScriptGenerator', () => {
 process.env = {
   ...process.env,
   NODE_ENV: 'test',
+  SESSION_SECRET: 'test-secret',
   VITE_API_URL: 'http://localhost:3000'
 }
 ```

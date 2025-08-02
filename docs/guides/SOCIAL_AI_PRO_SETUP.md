@@ -76,6 +76,9 @@ Add these in Vercel Dashboard → Settings → Environment Variables:
 VITE_API_URL=https://social-ai.pro
 NODE_ENV=production
 
+# Required for session encryption
+SESSION_SECRET=your_session_secret
+
 # Add your API keys (when ready)
 GOOGLE_AI_API_KEY=your_key_here
 ELEVENLABS_API_KEY=your_key_here

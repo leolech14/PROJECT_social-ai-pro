@@ -153,6 +153,9 @@ All services have fallback strategies:
 ## 10. Environment Variables
 
 ```bash
+# Required for session management
+SESSION_SECRET=your_session_secret
+
 # OpenAI
 OPENAI_API_KEY=sk-proj-...
 # Optional: scope requests to a specific organization
