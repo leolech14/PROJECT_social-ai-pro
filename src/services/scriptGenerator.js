@@ -2,15 +2,22 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 
 class ScriptGenerator {
   constructor() {
-    const apiKey = process.env.GOOGLE_AI_API_KEY
-    if (!apiKey) {
-      console.warn('GOOGLE_AI_API_KEY not set, using mock mode')
+    // Try OpenAI first
+    this.openaiKey = process.env.OPENAI_API_KEY
+    this.googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY
+    
+    if (!this.openaiKey && !this.googleKey) {
+      console.warn('No AI API keys set, using mock mode')
       this.mockMode = true
       return
     }
     
-    this.genAI = new GoogleGenerativeAI(apiKey)
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' })
+    // Initialize Google AI if available
+    if (this.googleKey) {
+      this.genAI = new GoogleGenerativeAI(this.googleKey)
+      // Updated to use latest Gemini 2.5 Flash model
+      this.googleModel = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+    }
   }
 
   async generateScript({ description, tone, platforms, duration }) {
@@ -20,48 +27,110 @@ class ScriptGenerator {
 
     const platformString = platforms.join(', ')
     const prompt = `
-You are an expert social media content creator specializing in viral video scripts.
+You are an expert social media content creator with deep knowledge of viral video psychology and engagement science.
 
 Create a compelling ${duration}-second video script for ${platformString} with a ${tone.toLowerCase()} tone.
 
 Video concept: ${description}
 
-Requirements:
-1. Hook: Start with an attention-grabbing opening (first 3 seconds are crucial)
-2. Structure: Use proven viral content patterns
-3. Pacing: Keep it dynamic with scene changes every 3-5 seconds
-4. Call-to-Action: Include a natural CTA that fits the platform
-5. Platform Optimization:
-   - TikTok: Short, punchy sentences, trend-aware
-   - Instagram: Visual descriptions, aesthetic focus
-   - YouTube: Information-dense, searchable keywords
+CRITICAL SUCCESS PRINCIPLES (Research-Based):
 
-Format the response as JSON with the following structure:
+1. THE 3-SECOND RULE: The first 3 seconds determine if viewers stay or scroll. Front-load your most compelling content.
+
+2. HOOK STRATEGIES (Choose the best for this content):
+   - Bold Visual/Shock Factor: Eye-catching, unexpected opening
+   - Provocative Question: "Did you know 85% of people do X?"
+   - Secret Value: "Here's a trick 99% of businesses don't know..."
+   - Relatable Problem: Start with a common pain point
+   - Dynamic Movement: High-energy opening with action
+
+3. STORYTELLING STRUCTURE:
+   - Beginning (Hook/Setup): First 3-5 seconds
+   - Middle (Build Tension/Value): Develop the idea, heighten emotion
+   - End (Climax/Resolution): Big reveal, then immediate CTA
+
+4. PACING & PATTERN INTERRUPTS:
+   - Change something every 5-10 seconds (visual, text, angle)
+   - Use pattern interrupts: text flashes, sound effects, cutaways
+   - No static moments - constant engagement
+
+5. EMOTIONAL ENGAGEMENT:
+   - Target high-arousal emotions: awe, amusement, surprise, excitement
+   - Include an emotional peak around 2/3 mark of the video
+   - Make viewers feel something to drive sharing
+
+6. PLATFORM-SPECIFIC OPTIMIZATION:
+   - TikTok: Ultra-fast-paced, authentic, trend-driven, 15-30s sweet spot
+   - Instagram: Slightly polished, aesthetic, mute-friendly with captions
+   - YouTube: Can handle slight setup, educational, searchable keywords
+
+7. ENGAGEMENT TECHNIQUES:
+   - Direct questions: "Which would you try? Comment below!"
+   - Share prompts: "Tag someone who needs this!"
+   - Clear, action-oriented CTAs
+
+Format as JSON with detailed scene breakdown:
 {
-  "hook": "The opening line that grabs attention",
+  "hook": "The opening line (3-second rule compliant)",
+  "hookType": "question|secret|problem|shock|movement",
   "scenes": [
     {
       "timestamp": "0:00-0:05",
-      "narration": "What to say",
-      "visual": "What to show",
-      "emotion": "Target emotion"
+      "narration": "Exact words to say",
+      "visual": "Specific visual description",
+      "textOverlay": "On-screen text if any",
+      "emotion": "Target emotion",
+      "patternInterrupt": "Visual/audio change to maintain attention"
     }
   ],
-  "cta": "The call to action",
-  "hashtags": ["relevant", "hashtags"],
-  "tips": ["platform-specific tips"]
+  "emotionalPeak": {
+    "timestamp": "Timing of emotional climax",
+    "description": "The wow moment that drives sharing"
+  },
+  "cta": "Clear, action-oriented call to action",
+  "hashtags": ["viral-potential", "platform-optimized", "hashtags"],
+  "engagementPrompts": ["Questions or prompts to drive comments/shares"],
+  "retentionTactics": ["Specific techniques used to maintain viewership"]
 }
 `
 
-    try {
-      const result = await this.model.generateContent(prompt)
-      const response = await result.response
-      const text = response.text()
-      
-      // Parse JSON from the response
-      const jsonMatch = text.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        const scriptData = JSON.parse(jsonMatch[0])
+    // Try OpenAI first (using GPT-4 until O3 is available)
+    if (this.openaiKey) {
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.openaiKey}`,
+            'OpenAI-Organization': 'org-kMMJiRlBzjmaoZSsnapWMOrx'
+          },
+          body: JSON.stringify({
+            // Note: Change to 'o3' when OpenAI releases the model
+            // Currently using GPT-4 Turbo which is the most advanced available model
+            model: 'gpt-4-turbo-preview', // Will update to 'o3' when available
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert social media content creator. Always respond with valid JSON.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            temperature: 0.8,
+            max_tokens: 1000,
+            response_format: { type: "json_object" }
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error(`OpenAI API error: ${response.status}`)
+        }
+
+        const data = await response.json()
+        const scriptData = JSON.parse(data.choices[0].message.content)
+        
         return {
           success: true,
           script: {
@@ -73,20 +142,57 @@ Format the response as JSON with the following structure:
             hashtags: scriptData.hashtags,
             tone,
             platforms,
-            duration
+            duration,
+            generatedBy: 'openai-gpt4' // Will be 'openai-o3' when available
           }
         }
-      }
-      
-      throw new Error('Failed to parse script JSON')
-    } catch (error) {
-      console.error('Script generation error:', error)
-      return {
-        success: false,
-        error: error.message,
-        script: this.generateMockScript({ description, tone, platforms, duration }).script
+      } catch (error) {
+        console.error('OpenAI generation error:', error)
+        // Fall through to Google AI
       }
     }
+
+    // Try Google AI as fallback
+    if (this.googleModel) {
+      try {
+        const result = await this.googleModel.generateContent(prompt)
+        const response = await result.response
+        const text = response.text()
+        
+        // Parse JSON from the response
+        const jsonMatch = text.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          const scriptData = JSON.parse(jsonMatch[0])
+          return {
+            success: true,
+            script: {
+              id: Date.now(),
+              content: this.formatScriptContent(scriptData),
+              hook: scriptData.hook,
+              scenes: scriptData.scenes,
+              cta: scriptData.cta,
+              hashtags: scriptData.hashtags,
+              tone,
+              platforms,
+              duration,
+              generatedBy: 'google-gemini'
+            }
+          }
+        }
+        
+        throw new Error('Failed to parse script JSON')
+      } catch (error) {
+        console.error('Google AI generation error:', error)
+        return {
+          success: false,
+          error: error.message,
+          script: this.generateMockScript({ description, tone, platforms, duration }).script
+        }
+      }
+    }
+
+    // If all else fails, use mock
+    return this.generateMockScript({ description, tone, platforms, duration })
   }
 
   formatScriptContent(scriptData) {
@@ -131,7 +237,8 @@ Format the response as JSON with the following structure:
         hashtags: ['#viral', '#trending', `#${platforms[0].toLowerCase()}`],
         tone,
         platforms,
-        duration
+        duration,
+        generatedBy: 'mock'
       }
     }
   }

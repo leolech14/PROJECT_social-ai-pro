@@ -845,12 +845,6 @@ function App() {
                           handleVoiceGeneration()
                         }
                       }}
-                      userInput={{
-                        description: inputText,
-                        tone: selectedTone,
-                        platforms: selectedPlatforms,
-                        duration: duration
-                      }}
                     />
                   </motion.div>
                 )}
