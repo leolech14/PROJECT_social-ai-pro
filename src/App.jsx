@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
+import { AnimatePresence, useMotionValue, useTransform, motion } from 'framer-motion'
 import { Mic, Sparkles, Video, Wand2, Zap, Play, ChevronDown, Film, Palette, Clock, Camera, Music, Share2 } from 'lucide-react'
 import './App.css'
 
@@ -12,6 +12,13 @@ function App() {
   const [duration, setDuration] = useState(30)
   const [isRecording, setIsRecording] = useState(false)
   
+  // Data persistence between stages
+  const [generatedScript, setGeneratedScript] = useState(null)
+  const [selectedVoice, setSelectedVoice] = useState(null)
+  const [selectedMedia, setSelectedMedia] = useState(null)
+  const [selectedMusic, setSelectedMusic] = useState(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+  
   // Mouse parallax effect
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
@@ -23,7 +30,7 @@ function App() {
     }
     window.addEventListener('mousemove', handleMouseMove)
     return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [])
+  }, [mouseX, mouseY])
 
   const stages = ['Script Creation', 'Voice Selection', 'Video Assembly']
   
@@ -497,6 +504,7 @@ function App() {
                                 whileTap={{ scale: 0.98 }}
                                 onClick={async () => {
                                   try {
+                                    setIsGenerating(true);
                                     const response = await fetch('/api/generate-script', {
                                       method: 'POST',
                                       headers: { 'Content-Type': 'application/json' },
@@ -510,18 +518,38 @@ function App() {
                                     const data = await response.json();
                                     if (data.success) {
                                       console.log('Script generated:', data.script);
+                                      setGeneratedScript(data.script);
                                       setStage(1);
+                                    } else {
+                                      console.error('Script generation failed:', data.error);
                                     }
                                   } catch (error) {
                                     console.error('Error generating script:', error);
+                                  } finally {
+                                    setIsGenerating(false);
                                   }
                                 }}
-                                disabled={!inputText || !selectedTone || selectedPlatforms.length === 0}
+                                disabled={!inputText || !selectedTone || selectedPlatforms.length === 0 || isGenerating}
                                 className="w-full py-3 sm:py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl sm:rounded-2xl font-semibold text-white shadow-xl relative overflow-hidden group text-sm sm:text-base lg:text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <span className="relative z-10 flex items-center justify-center">
-                                  Generate Script 
-                                  <Wand2 className="ml-2 sm:ml-3 w-4 h-4 sm:w-5 sm:h-5" />
+                                  {isGenerating ? (
+                                    <>
+                                      Generating...
+                                      <motion.div
+                                        animate={{ rotate: 360 }}
+                                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                        className="ml-2"
+                                      >
+                                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+                                      </motion.div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      Generate Script 
+                                      <Wand2 className="ml-2 sm:ml-3 w-4 h-4 sm:w-5 sm:h-5" />
+                                    </>
+                                  )}
                                 </span>
                                 <motion.div
                                   className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500"
@@ -560,7 +588,276 @@ function App() {
               </motion.div>
             )}
 
-            {/* Stage 1 & 2 would follow similar responsive patterns... */}
+            {/* Stage 1: Voice Selection */}
+            {stage === 1 && (
+              <motion.div
+                key="stage1"
+                className="flex items-start justify-center px-4"
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -100, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 80, damping: 20 }}
+              >
+                <div className="w-full max-w-4xl">
+                  <motion.div 
+                    className="relative"
+                    initial={{ scale: 0.95 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <div className="relative bg-gray-900/60 backdrop-blur-2xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 border border-white/10 shadow-2xl">
+                      <motion.div 
+                        className="absolute -inset-[1px] bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-orange-500/20 rounded-2xl sm:rounded-3xl opacity-50 blur-sm"
+                        animate={{
+                          opacity: [0.3, 0.6, 0.3],
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      />
+                      
+                      <div className="relative z-10">
+                        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-6 sm:mb-8 text-center flex items-center justify-center">
+                          <motion.div
+                            animate={{
+                              scale: [1, 1.1, 1],
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
+                          >
+                            <Mic className="mr-2 sm:mr-3 text-blue-400 w-6 h-6 sm:w-8 sm:h-8" />
+                          </motion.div>
+                          Select Your Voice
+                        </h2>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                          {[
+                            { name: 'Sarah', style: 'Professional', gender: 'Female', preview: '🎯' },
+                            { name: 'Marcus', style: 'Energetic', gender: 'Male', preview: '⚡' },
+                            { name: 'Emma', style: 'Friendly', gender: 'Female', preview: '😊' },
+                            { name: 'James', style: 'Confident', gender: 'Male', preview: '💪' },
+                          ].map((voice, index) => (
+                            <motion.div
+                              key={voice.name}
+                              initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 0.2 + index * 0.1 }}
+                              whileHover={{ scale: 1.03, y: -5 }}
+                              whileTap={{ scale: 0.98 }}
+                              className="relative bg-gray-800/50 border border-white/10 rounded-xl p-4 sm:p-6 cursor-pointer hover:border-purple-500/50 transition-all duration-300"
+                            >
+                              <div className="flex items-center justify-between mb-3">
+                                <div>
+                                  <h3 className="text-lg sm:text-xl font-semibold text-white">{voice.name}</h3>
+                                  <p className="text-sm text-gray-400">{voice.style} • {voice.gender}</p>
+                                </div>
+                                <div className="text-3xl">{voice.preview}</div>
+                              </div>
+                              
+                              <div className="flex items-center space-x-3">
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  className="flex items-center px-3 py-1.5 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-500/30"
+                                >
+                                  <Play className="w-3 h-3 mr-1.5" />
+                                  Preview
+                                </motion.button>
+                                
+                                <div className="flex-1">
+                                  <div className="h-8 bg-gray-700/50 rounded-lg p-1 flex items-center">
+                                    <motion.div
+                                      className="h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-md"
+                                      initial={{ width: 0 }}
+                                      animate={{ width: '60%' }}
+                                      transition={{ duration: 1, delay: 0.5 + index * 0.1 }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                        
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setStage(0)}
+                            className="flex-1 py-3 sm:py-4 bg-gray-700/50 rounded-xl font-semibold text-white hover:bg-gray-700/70 transition-all"
+                          >
+                            Back to Script
+                          </motion.button>
+                          
+                          <motion.button
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setStage(2)}
+                            className="flex-1 py-3 sm:py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl font-semibold text-white shadow-xl relative overflow-hidden group"
+                          >
+                            <span className="relative z-10 flex items-center justify-center">
+                              Generate Voice
+                              <motion.div
+                                animate={{
+                                  x: [0, 5, 0],
+                                }}
+                                transition={{
+                                  duration: 1.5,
+                                  repeat: Infinity,
+                                  ease: "easeInOut"
+                                }}
+                              >
+                                <ChevronDown className="ml-2 w-5 h-5 rotate-[-90deg]" />
+                              </motion.div>
+                            </span>
+                            <motion.div
+                              className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500"
+                              initial={{ x: '-100%' }}
+                              whileHover={{ x: 0 }}
+                              transition={{ duration: 0.3 }}
+                            />
+                          </motion.button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Stage 2: Video Assembly */}
+            {stage === 2 && (
+              <motion.div
+                key="stage2"
+                className="flex items-start justify-center px-4"
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -100, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 80, damping: 20 }}
+              >
+                <div className="w-full max-w-5xl">
+                  <motion.div 
+                    className="relative"
+                    initial={{ scale: 0.95 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <div className="relative bg-gray-900/60 backdrop-blur-2xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 border border-white/10 shadow-2xl">
+                      <motion.div 
+                        className="absolute -inset-[1px] bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-orange-500/20 rounded-2xl sm:rounded-3xl opacity-50 blur-sm"
+                        animate={{
+                          opacity: [0.3, 0.6, 0.3],
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      />
+                      
+                      <div className="relative z-10">
+                        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-6 sm:mb-8 text-center flex items-center justify-center">
+                          <motion.div
+                            animate={{
+                              rotate: [0, 360],
+                            }}
+                            transition={{
+                              duration: 20,
+                              repeat: Infinity,
+                              ease: "linear"
+                            }}
+                          >
+                            <Video className="mr-2 sm:mr-3 text-green-400 w-6 h-6 sm:w-8 sm:h-8" />
+                          </motion.div>
+                          Assemble Your Video
+                        </h2>
+                        
+                        {/* Media Selection */}
+                        <div className="mb-6 sm:mb-8">
+                          <h3 className="text-lg font-semibold mb-4 flex items-center">
+                            <Film className="w-5 h-5 mr-2 text-purple-400" />
+                            Choose Media Style
+                          </h3>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {['Stock Footage', 'AI Generated', 'Animated', 'Text Only'].map((style, index) => (
+                              <motion.button
+                                key={style}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 + index * 0.05 }}
+                                whileHover={{ scale: 1.05, y: -2 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="py-3 px-4 bg-gray-800/50 border border-white/10 rounded-xl text-sm font-medium hover:border-purple-500/50 hover:bg-gray-800/70 transition-all"
+                              >
+                                {style}
+                              </motion.button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Music Selection */}
+                        <div className="mb-6 sm:mb-8">
+                          <h3 className="text-lg font-semibold mb-4 flex items-center">
+                            <Music className="w-5 h-5 mr-2 text-pink-400" />
+                            Background Music
+                          </h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {['Upbeat', 'Chill', 'Epic'].map((mood, index) => (
+                              <motion.div
+                                key={mood}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 + index * 0.1 }}
+                                className="bg-gray-800/50 border border-white/10 rounded-xl p-4 hover:border-pink-500/50 transition-all cursor-pointer"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium">{mood}</span>
+                                  <Play className="w-4 h-4 text-pink-400" />
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Final Actions */}
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setStage(1)}
+                            className="flex-1 py-3 sm:py-4 bg-gray-700/50 rounded-xl font-semibold text-white hover:bg-gray-700/70 transition-all"
+                          >
+                            Back to Voice
+                          </motion.button>
+                          
+                          <motion.button
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="flex-1 py-3 sm:py-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl font-semibold text-white shadow-xl relative overflow-hidden group"
+                          >
+                            <span className="relative z-10 flex items-center justify-center">
+                              Create Video
+                              <Sparkles className="ml-2 w-5 h-5" />
+                            </span>
+                            <motion.div
+                              className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-500"
+                              initial={{ x: '-100%' }}
+                              whileHover={{ x: 0 }}
+                              transition={{ duration: 0.3 }}
+                            />
+                          </motion.button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
       </div>

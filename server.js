@@ -1,11 +1,15 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import ScriptGenerator from './src/services/scriptGenerator.js'
 
 dotenv.config()
 
 const app = express()
 const PORT = process.env.BACKEND_PORT || process.env.PORT || 3003
+
+// Initialize services
+const scriptGenerator = new ScriptGenerator()
 
 // Middleware
 app.use(cors())
@@ -18,20 +22,33 @@ app.get('/api/health', (req, res) => {
 
 // Script generation endpoint
 app.post('/api/generate-script', async (req, res) => {
-  const { description, tone, platforms, duration } = req.body
-  
-  // Mock script generation
-  const script = {
-    id: Date.now(),
-    content: `Here's your ${tone.toLowerCase()} script for ${platforms.join(', ')} (${duration}s):\n\n"${description}"\n\nThis would be enhanced with AI-powered social media optimization...`,
-    tone,
-    platforms,
-    duration,
-    hooks: ['Opening hook', 'Middle hook', 'Closing CTA'],
-    scenes: Math.ceil(duration / 10)
+  try {
+    const { description, tone, platforms, duration } = req.body
+    
+    // Validate input
+    if (!description || !tone || !platforms || !duration) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing required fields' 
+      })
+    }
+    
+    // Generate script using AI
+    const result = await scriptGenerator.generateScript({
+      description,
+      tone,
+      platforms,
+      duration
+    })
+    
+    res.json(result)
+  } catch (error) {
+    console.error('Script generation error:', error)
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to generate script' 
+    })
   }
-  
-  res.json({ success: true, script })
 })
 
 // Voice generation endpoint
@@ -53,7 +70,7 @@ app.post('/api/generate-voice', async (req, res) => {
 
 // Video assembly endpoint
 app.post('/api/assemble-video', async (req, res) => {
-  const { scriptId, voiceId, media } = req.body
+  const { scriptId, voiceId, media: _media } = req.body
   
   // Mock video assembly
   const video = {
