@@ -2,6 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global Compact UI Settings - 40% smaller fonts and reduced spacing */
+:root {
+  font-size: 60%; /* Base reduction - makes 1rem = 9.6px instead of 16px */
+}
+
+body {
+  @apply text-sm;
+}
+
+/* Compact spacing overrides */
+h1 { @apply text-2xl font-bold mb-2; }
+h2 { @apply text-xl font-semibold mb-2; }
+h3 { @apply text-lg font-semibold mb-1; }
+h4 { @apply text-base font-medium mb-1; }
+p { @apply text-sm mb-1; }
+
+/* Compact form elements */
+input, textarea, select {
+  @apply text-sm py-1 px-2;
+}
+
+button {
+  @apply text-sm py-1 px-3;
+}
+
+/* Compact cards and containers */
+.card, .panel {
+  @apply p-2;
+}
+
 /* Custom CSS for glassmorphism and animations */
 @layer components {
   .glass {

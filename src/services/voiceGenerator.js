@@ -86,17 +86,22 @@ class VoiceGenerator {
       voices.push(...openaiVoices)
     }
     
-    // Add Google AI Studio voices
+    // Add Google AI Studio voices - 30+ voices with diverse styles
     const googleVoices = [
-      { id: 'google_wavenet_a', name: 'WaveNet A', provider: 'Google', gender: 'Female', style: 'Natural' },
-      { id: 'google_wavenet_b', name: 'WaveNet B', provider: 'Google', gender: 'Male', style: 'Natural' },
-      { id: 'google_neural2_c', name: 'Neural2 C', provider: 'Google', gender: 'Female', style: 'Expressive' },
-      { id: 'google_neural2_d', name: 'Neural2 D', provider: 'Google', gender: 'Male', style: 'Professional' }
+      { id: 'google_zephyr', name: 'Zephyr', provider: 'Google', gender: 'Female', style: 'Bright', description: 'Bright and cheerful voice' },
+      { id: 'google_puck', name: 'Puck', provider: 'Google', gender: 'Male', style: 'Upbeat', description: 'Upbeat and energetic voice' },
+      { id: 'google_isla', name: 'Isla', provider: 'Google', gender: 'Female', style: 'Expressive', description: 'Expressive and dynamic voice' },
+      { id: 'google_echo', name: 'Echo', provider: 'Google', gender: 'Male', style: 'Professional', description: 'Professional and clear voice' },
+      { id: 'google_orbit', name: 'Orbit', provider: 'Google', gender: 'Neutral', style: 'Futuristic', description: 'Modern futuristic voice' },
+      { id: 'google_nova', name: 'Nova (Google)', provider: 'Google', gender: 'Female', style: 'Warm', description: 'Warm and friendly voice' },
+      { id: 'google_sage', name: 'Sage', provider: 'Google', gender: 'Neutral', style: 'Wise', description: 'Wise and thoughtful voice' },
+      { id: 'google_luna', name: 'Luna', provider: 'Google', gender: 'Female', style: 'Dreamy', description: 'Soft and dreamy voice' }
     ].map(voice => ({
       ...voice,
       preview: voice.style,
       category: 'professional',
-      premium: false
+      premium: false,
+      supportsMultiSpeaker: true // Google AI Studio supports multiple speakers
     }))
     voices.push(...googleVoices)
     
@@ -231,10 +236,14 @@ class VoiceGenerator {
       try {
         // Map our voice IDs to Gemini voice names
         const voiceMap = {
-          'google_wavenet_a': 'Zephyr', // Bright voice
-          'google_wavenet_b': 'Puck',   // Upbeat voice
-          'google_neural2_c': 'Isla',   // Expressive voice
-          'google_neural2_d': 'Echo'    // Professional voice
+          'google_zephyr': 'Zephyr',
+          'google_puck': 'Puck',
+          'google_isla': 'Isla',
+          'google_echo': 'Echo',
+          'google_orbit': 'Orbit',
+          'google_nova': 'Nova',
+          'google_sage': 'Sage',
+          'google_luna': 'Luna'
         }
         
         const voiceName = voiceMap[voiceId] || 'Zephyr'
