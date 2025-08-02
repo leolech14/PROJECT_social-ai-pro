@@ -139,7 +139,7 @@ const ScriptForm = ({
                     Tone
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {['Professional', 'Casual', 'Excited', 'Inspirational'].map((tone) => (
+                    {['Professional', 'Educational', 'Fun', 'Inspiring'].map((tone) => (
                       <motion.button
                         key={tone}
                         whileHover={{ scale: 1.05, y: -2 }}
