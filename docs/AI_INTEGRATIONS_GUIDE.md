@@ -7,7 +7,7 @@ This document details all AI service integrations in the AI Video Creator platfo
 
 ### Primary: OpenAI GPT-4 Turbo
 - **Model**: `gpt-4-turbo-preview` (ready to switch to `o3` when available)
-- **Organization ID**: `org-kMMJiRlBzjmaoZSsnapWMOrx`
+- **Organization ID**: Configurable via `OPENAI_ORG_ID` (optional)
 - **Features**:
   - JSON structured output
   - Social media optimization
@@ -72,7 +72,8 @@ This document details all AI service integrations in the AI Video Creator platfo
 ```javascript
 headers: {
   'Authorization': `Bearer ${OPENAI_API_KEY}`,
-  'OpenAI-Organization': 'org-kMMJiRlBzjmaoZSsnapWMOrx'
+  // Include only if OPENAI_ORG_ID is set
+  ...(OPENAI_ORG_ID && { 'OpenAI-Organization': OPENAI_ORG_ID })
 }
 ```
 
@@ -154,6 +155,7 @@ All services have fallback strategies:
 ```bash
 # OpenAI
 OPENAI_API_KEY=sk-proj-...
+# Optional: scope requests to a specific organization
 OPENAI_ORG_ID=org-kMMJiRlBzjmaoZSsnapWMOrx
 
 # Google AI

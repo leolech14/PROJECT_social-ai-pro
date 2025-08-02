@@ -4,6 +4,7 @@ class ScriptGenerator {
   constructor() {
     // Try OpenAI first
     this.openaiKey = process.env.OPENAI_API_KEY
+    this.openaiOrgId = process.env.OPENAI_ORG_ID
     this.googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY
     
     if (!this.openaiKey && !this.googleKey) {
@@ -97,13 +98,17 @@ Format as JSON with detailed scene breakdown:
     // Try OpenAI first (using GPT-4 until O3 is available)
     if (this.openaiKey) {
       try {
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.openaiKey}`
+        }
+        if (this.openaiOrgId) {
+          headers['OpenAI-Organization'] = this.openaiOrgId
+        }
+
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.openaiKey}`,
-            'OpenAI-Organization': 'org-kMMJiRlBzjmaoZSsnapWMOrx'
-          },
+          headers,
           body: JSON.stringify({
             // Note: Change to 'o3' when OpenAI releases the model
             // Currently using GPT-4 Turbo which is the most advanced available model
