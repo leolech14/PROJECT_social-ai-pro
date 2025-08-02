@@ -5,7 +5,7 @@ import App from '../App'
 global.fetch = jest.fn()
 
 // Mock VoiceSelection to avoid complex dependencies in tests
-jest.mock('../components/VoiceSelection', () => {
+jest.mock('../components/VoiceSelection.jsx', () => {
   const React = require('react')
   return () => React.createElement('div', { 'data-testid': 'voice-selector' })
 })

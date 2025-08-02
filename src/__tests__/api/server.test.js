@@ -42,16 +42,63 @@ jest.mock('../../services/mediaService.js', () => {
 })
 
 jest.mock('../../services/authService.js', () => {
+  const users = new Map()
   return jest.fn().mockImplementation(() => ({
-    createUser: jest.fn().mockResolvedValue({
-      user: { id: 1, email: 'test@example.com', name: 'Tester' },
-      token: 'mock-token'
+    createUser: jest.fn(async ({ email, password, name }) => {
+      if (users.has(email)) {
+        throw new Error('User already exists')
+      }
+      const user = {
+        id: users.size + 1,
+        email,
+        name,
+        password,
+        createdAt: new Date(),
+        subscription: 'free',
+        videosCreated: 0,
+        monthlyLimit: 3
+      }
+      users.set(email, user)
+      const { password: _p, ...userWithoutPassword } = user
+      return { user: userWithoutPassword, token: 'token-' + user.id }
     }),
-    loginUser: jest.fn().mockResolvedValue({
-      user: { id: 1, email: 'test@example.com', name: 'Tester' },
-      token: 'mock-token'
+    loginUser: jest.fn(async ({ email, password }) => {
+      const user = users.get(email)
+      if (!user || user.password !== password) {
+        throw new Error('Invalid credentials')
+      }
+      const { password: _p, ...userWithoutPassword } = user
+      return { user: userWithoutPassword, token: 'token-' + user.id }
     }),
-    getUserById: jest.fn()
+    getUserById: jest.fn(async (id) => {
+      for (const user of users.values()) {
+        if (user.id === id) {
+          const { password: _p, ...userWithoutPassword } = user
+          return userWithoutPassword
+        }
+      }
+      return null
+    }),
+    incrementVideoCount: jest.fn(async (id) => {
+      for (const user of users.values()) {
+        if (user.id === id) {
+          user.videosCreated += 1
+          return user.videosCreated
+        }
+      }
+      throw new Error('User not found')
+    }),
+    checkVideoLimit: jest.fn(async (id) => {
+      for (const user of users.values()) {
+        if (user.id === id) {
+          const allowed = user.subscription !== 'free' ? true : user.videosCreated < user.monthlyLimit
+          const remaining = user.subscription !== 'free' ? -1 : Math.max(0, user.monthlyLimit - user.videosCreated)
+          return { allowed, remaining }
+        }
+      }
+      throw new Error('User not found')
+    }),
+    verifyToken: jest.fn(() => ({ userId: 1, email: 'test@example.com' }))
   }))
 })
 
@@ -61,7 +108,9 @@ describe('API Endpoints', () => {
   beforeEach(async () => {
     // Clear module cache to get fresh instance
     jest.resetModules()
-    
+    // Provide a dummy database URL for services that require it
+    process.env.DATABASE_URL = 'postgres://user:password@localhost:5432/testdb'
+
     // Import server after mocks are set up
     const serverModule = await import('../../../server.js')
     app = serverModule.default
