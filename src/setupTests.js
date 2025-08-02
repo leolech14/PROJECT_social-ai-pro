@@ -1,10 +1,24 @@
 import '@testing-library/jest-dom'
-import React from 'react'
+import mockReact from 'react'
 import { TextEncoder, TextDecoder } from 'util'
 
 // Add TextEncoder/TextDecoder for Node environment
 global.TextEncoder = TextEncoder
 global.TextDecoder = TextDecoder
+
+// Minimal canvas mock for tests
+HTMLCanvasElement.prototype.getContext = () => ({
+  clearRect: jest.fn(),
+  beginPath: jest.fn(),
+  arc: jest.fn(),
+  fill: jest.fn(),
+  moveTo: jest.fn(),
+  lineTo: jest.fn(),
+  stroke: jest.fn(),
+  fillStyle: '#000',
+  strokeStyle: '#000',
+  lineWidth: 1
+})
 
 // Mock framer-motion for tests
 jest.mock('framer-motion', () => {
@@ -32,6 +46,14 @@ jest.mock('framer-motion', () => {
     useMotionValue: () => ({ set: jest.fn() }),
     useTransform: () => 0,
   }
+})
+
+// Mock lucide-react icons to simple svg components
+jest.mock('lucide-react', () => {
+  const mockReactIcon = require('react')
+  return new Proxy({}, {
+    get: () => (props) => mockReactIcon.createElement('svg', props)
+  })
 })
 
 // Mock environment variables

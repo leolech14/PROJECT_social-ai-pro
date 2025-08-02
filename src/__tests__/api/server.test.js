@@ -23,6 +23,7 @@ jest.mock('../../services/voiceGenerator.js', () => {
       success: true,
       voices: [{ id: 'test', name: 'Test Voice' }]
     }),
+    getVoiceInfo: jest.fn().mockResolvedValue({ id: 'test', premium: false }),
     generateVoice: jest.fn().mockResolvedValue({
       success: true,
       voice: { id: 1, audioUrl: '/test.mp3' }
