@@ -110,9 +110,9 @@ Format as JSON with detailed scene breakdown:
           method: 'POST',
           headers,
           body: JSON.stringify({
-            // Note: Change to 'o3' when OpenAI releases the model
-            // Currently using GPT-4 Turbo which is the most advanced available model
-            model: 'gpt-4-turbo', // Will update to 'o3' when available
+            // Using o3-mini model for advanced reasoning capabilities
+            // For higher tier accounts, can change to 'o3' for even better performance
+            model: 'o3-mini', // Using o3-mini for broader availability
             messages: [
               {
                 role: 'system',
@@ -125,7 +125,8 @@ Format as JSON with detailed scene breakdown:
             ],
             temperature: 0.8,
             max_tokens: 1000,
-            response_format: { type: "json_object" }
+            response_format: { type: "json_object" },
+            reasoning_effort: "medium" // o3 specific parameter for reasoning depth
           })
         })
 
@@ -148,7 +149,7 @@ Format as JSON with detailed scene breakdown:
             tone,
             platforms,
             duration,
-            generatedBy: 'openai-gpt4' // Will be 'openai-o3' when available
+            generatedBy: 'openai-o3-mini'
           }
         }
       } catch (error) {
