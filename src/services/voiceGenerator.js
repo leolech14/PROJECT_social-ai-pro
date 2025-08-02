@@ -221,10 +221,78 @@ class VoiceGenerator {
       }
     }
 
-    // Handle Google voices (would need Google Cloud TTS setup)
+    // Handle Google voices using Gemini 2.5 Flash TTS
     if (voiceId.startsWith('google_')) {
-      // For now, return mock as Google TTS requires more setup
-      return this.generateMockVoice({ text, voiceId, scriptId })
+      const googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY
+      if (!googleKey) {
+        return this.generateMockVoice({ text, voiceId, scriptId })
+      }
+
+      try {
+        // Map our voice IDs to Gemini voice names
+        const voiceMap = {
+          'google_wavenet_a': 'Zephyr', // Bright voice
+          'google_wavenet_b': 'Puck',   // Upbeat voice
+          'google_neural2_c': 'Isla',   // Expressive voice
+          'google_neural2_d': 'Echo'    // Professional voice
+        }
+        
+        const voiceName = voiceMap[voiceId] || 'Zephyr'
+        
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${googleKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: text
+              }]
+            }],
+            generationConfig: {
+              responseModalities: ['AUDIO'],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: {
+                    voiceName: voiceName
+                  }
+                }
+              }
+            }
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error(`Google TTS failed: ${response.status}`)
+        }
+
+        const data = await response.json()
+        
+        // Extract audio from response
+        if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.inlineData?.data) {
+          const audioBase64 = data.candidates[0].content.parts[0].inlineData.data
+          const audioUrl = `data:audio/wav;base64,${audioBase64}`
+          
+          return {
+            success: true,
+            voice: {
+              id: Date.now(),
+              scriptId,
+              voiceId,
+              audioUrl,
+              duration: Math.ceil(text.length / 15),
+              status: 'ready',
+              provider: 'google-gemini'
+            }
+          }
+        }
+        
+        throw new Error('No audio data in response')
+      } catch (error) {
+        console.error('Google Gemini TTS error:', error)
+        return this.generateMockVoice({ text, voiceId, scriptId })
+      }
     }
 
     // Fallback to mock
