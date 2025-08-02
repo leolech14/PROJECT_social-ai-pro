@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sub-Agent Architecture Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0b0f;
+            --bg-secondary: #161822;
+            --bg-tertiary: #1e2139;
+            --accent-blue: #00d4ff;
+            --accent-purple: #8b5cf6;
+            --accent-green: #00ff88;
+            --accent-orange: #ff6b35;
+            --accent-red: #ff4757;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a9c0;
+            --text-muted: #6b7280;
+            --border: #2d3748;
+            --glow: 0 0 20px rgba(0, 212, 255, 0.3);
+            --glow-purple: 0 0 20px rgba(139, 92, 246, 0.3);
+            --glow-green: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #0d1117 100%);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-areas: 
+                "header header header"
+                "sidebar main-content config"
+                "sidebar status status";
+            grid-template-columns: 300px 1fr 350px;
+            grid-template-rows: 80px 1fr 200px;
+            height: 100vh;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .header {
+            grid-area: header;
+            background: linear-gradient(90deg, var(--bg-secondary), var(--bg-tertiary));
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--glow);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .sidebar {
+            grid-area: sidebar;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar h3 {
+            color: var(--accent-blue);
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .agent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .agent-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .agent-item:hover {
+            border-color: var(--accent-blue);
+            box-shadow: var(--glow);
+            transform: translateY(-2px);
+        }
+
+        .agent-item.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(139, 92, 246, 0.1));
+            border-color: var(--accent-blue);
+            box-shadow: var(--glow);
+        }
+
+        .agent-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .agent-status {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-active { background: var(--accent-green); }
+        .status-idle { background: var(--accent-orange); }
+        .status-error { background: var(--accent-red); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-content {
+            grid-area: main-content;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .network-graph {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .config-panel {
+            grid-area: config;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .status-panel {
+            grid-area: status;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .status-card {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+        }
+
+        .status-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--glow);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .config-section {
+            margin-bottom: 25px;
+        }
+
+        .config-section h4 {
+            color: var(--accent-purple);
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .config-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .config-item label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .config-item input, .config-item select {
+            width: 100%;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .config-item input:focus, .config-item select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+        }
+
+        .toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: var(--accent-green);
+        }
+
+        .toggle-switch::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::before {
+            transform: translateX(20px);
+        }
+
+        .circuit-breaker {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .circuit-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .circuit-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .circuit-state {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .circuit-closed { background: rgba(0, 255, 136, 0.2); color: var(--accent-green); }
+        .circuit-open { background: rgba(255, 71, 87, 0.2); color: var(--accent-red); }
+        .circuit-half-open { background: rgba(255, 107, 53, 0.2); color: var(--accent-orange); }
+
+        .circuit-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .metric-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .communication-flow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .flow-line {
+            stroke: var(--accent-blue);
+            stroke-width: 2;
+            fill: none;
+            stroke-dasharray: 5,5;
+            animation: flow 2s linear infinite;
+        }
+
+        @keyframes flow {
+            to { stroke-dashoffset: -20; }
+        }
+
+        .agent-node {
+            position: absolute;
+            width: 120px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .agent-node:hover {
+            border-color: var(--accent-blue);
+            box-shadow: var(--glow);
+            transform: scale(1.05);
+        }
+
+        .agent-node.selected {
+            border-color: var(--accent-purple);
+            box-shadow: var(--glow-purple);
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), var(--bg-tertiary));
+        }
+
+        .agent-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .agent-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            color: var(--text-primary);
+        }
+
+        .connection-line {
+            position: absolute;
+            background: var(--accent-blue);
+            height: 2px;
+            transform-origin: left center;
+            opacity: 0.6;
+            animation: pulse-line 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-line {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .refresh-btn {
+            animation: rotate 2s linear infinite;
+        }
+
+        .refresh-btn.spinning {
+            animation-duration: 0.5s;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .health-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .health-excellent { background: var(--accent-green); }
+        .health-good { background: var(--accent-blue); }
+        .health-warning { background: var(--accent-orange); }
+        .health-critical { background: var(--accent-red); }
+
+        .tab-container {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .info-panel {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px;
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .info-panel.show {
+            display: block;
+        }
+
+        .info-panel h4 {
+            color: var(--accent-blue);
+            margin-bottom: 10px;
+        }
+
+        .info-item {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .tool-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+        .tool-tag {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-blue);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard {
+                grid-template-areas: 
+                    "header header"
+                    "sidebar main-content"
+                    "config status";
+                grid-template-columns: 300px 1fr;
+                grid-template-rows: 80px 1fr 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-areas: 
+                    "header"
+                    "sidebar"
+                    "main-content"
+                    "config"
+                    "status";
+                grid-template-columns: 1fr;
+                grid-template-rows: 80px 200px 300px 250px 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <header class="header">
+            <h1>🤖 Sub-Agent Architecture Dashboard</h1>
+            <div class="header-controls">
+                <span class="health-indicator health-excellent"></span>
+                <button class="btn" onclick="refreshData()">
+                    <span class="refresh-btn">⟳</span> Refresh
+                </button>
+                <button class="btn" onclick="togglePause()">
+                    <span id="pauseIcon">⏸</span> Pause
+                </button>
+            </div>
+        </header>
+
+        <aside class="sidebar">
+            <h3>🚀 Active Agents</h3>
+            <div class="agent-list" id="agentList">
+                <!-- Dynamically populated -->
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="tab-container">
+                <div class="tab active" onclick="switchTab('network')">Network Graph</div>
+                <div class="tab" onclick="switchTab('flow')">Communication Flow</div>
+                <div class="tab" onclick="switchTab('hierarchy')">Hierarchy View</div>
+            </div>
+            
+            <div class="tab-content active" id="network">
+                <div class="network-graph" id="networkGraph">
+                    <!-- Network visualization -->
+                </div>
+            </div>
+            
+            <div class="tab-content" id="flow">
+                <div class="network-graph">
+                    <svg class="communication-flow" id="communicationFlow">
+                        <!-- Communication flow lines -->
+                    </svg>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="hierarchy">
+                <div class="network-graph" id="hierarchyView">
+                    <!-- Hierarchy tree -->
+                </div>
+            </div>
+
+            <div class="info-panel" id="agentInfo">
+                <h4>Agent Details</h4>
+                <div id="agentDetails">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </main>
+
+        <aside class="config-panel">
+            <h3>⚙️ Configuration</h3>
+            
+            <div class="config-section">
+                <h4>Global Settings</h4>
+                <div class="config-item toggle">
+                    <label>Auto-refresh</label>
+                    <div class="toggle-switch active" onclick="toggleSetting(this)"></div>
+                </div>
+                <div class="config-item toggle">
+                    <label>Real-time monitoring</label>
+                    <div class="toggle-switch active" onclick="toggleSetting(this)"></div>
+                </div>
+                <div class="config-item">
+                    <label>Refresh interval (ms)</label>
+                    <input type="number" value="2000" id="refreshInterval">
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h4>Circuit Breakers</h4>
+                <div id="circuitBreakers">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h4>Agent Policies</h4>
+                <div class="config-item">
+                    <label>Max concurrent tasks</label>
+                    <select>
+                        <option>3</option>
+                        <option selected>5</option>
+                        <option>10</option>
+                    </select>
+                </div>
+                <div class="config-item">
+                    <label>Timeout (seconds)</label>
+                    <input type="number" value="30">
+                </div>
+                <div class="config-item">
+                    <label>Failure threshold</label>
+                    <input type="number" value="5">
+                </div>
+            </div>
+        </aside>
+
+        <section class="status-panel">
+            <div class="status-card">
+                <div class="status-value" id="activeAgents">0</div>
+                <div class="status-label">Active Agents</div>
+            </div>
+            <div class="status-card">
+                <div class="status-value" id="totalTasks">0</div>
+                <div class="status-label">Tasks Completed</div>
+            </div>
+            <div class="status-card">
+                <div class="status-value" id="avgResponse">0ms</div>
+                <div class="status-label">Avg Response</div>
+            </div>
+            <div class="status-card">
+                <div class="status-value" id="systemHealth">0%</div>
+                <div class="status-label">System Health</div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Comprehensive agent data structure
+        const agents = [
+            // Orchestration Layer
+            {
+                id: 'master-orchestrator',
+                name: 'Master Orchestrator',
+                icon: '🎯',
+                status: 'active',
+                description: 'Top-level coordinator managing all team supervisors',
+                hierarchy: 1,
+                team: 'orchestration',
+                tools: ['Read', 'Write', 'Edit', 'MultiEdit', 'Bash', 'Grep', 'Glob', 'LS', 'TodoWrite', 'Task'],
+                position: { x: 400, y: 50 },
+                connections: ['development-team-lead', 'quality-team-lead', 'infrastructure-team-lead', 'operations-team-lead'],
+                metrics: { tasks: 145, success: 99.5, avgTime: 89 },
+                circuitBreaker: { state: 'closed', failures: 0, threshold: 10 }
+            },
+            
+            // Team Leads
+            {
+                id: 'development-team-lead',
+                name: 'Development Team Lead',
+                icon: '💻',
+                status: 'active',
+                description: 'Supervises all development-related agents',
+                hierarchy: 2,
+                team: 'development',
+                tools: ['Read', 'Write', 'Edit', 'MultiEdit', 'Bash', 'Grep', 'Glob', 'LS', 'TodoWrite', 'Task'],
+                position: { x: 150, y: 200 },
+                connections: ['code-architect', 'feature-implementer', 'refactor-specialist'],
+                metrics: { tasks: 87, success: 97, avgTime: 120 },
+                circuitBreaker: { state: 'closed', failures: 0, threshold: 5 }
+            },
+            {
+                id: 'quality-team-lead',
+                name: 'Quality Team Lead',
+                icon: '✅',
+                status: 'active',
+                description: 'Ensures all code meets quality standards',
+                hierarchy: 2,
+                team: 'quality',
+                tools: ['Read', 'Write', 'Edit', 'Bash', 'Grep', 'Glob', 'LS', 'TodoWrite', 'Task'],
+                position: { x: 350, y: 200 },
+                connections: ['test-engineer', 'code-reviewer', 'security-scanner'],
+                metrics: { tasks: 63, success: 98.5, avgTime: 95 },
+                circuitBreaker: { state: 'closed', failures: 0, threshold: 5 }
+            },
+            {
+                id: 'infrastructure-team-lead',
+                name: 'Infrastructure Team Lead',
+                icon: '🏗️',
+                status: 'active',
+                description: 'Manages infrastructure and deployment',
+                hierarchy: 2,
+                team: 'infrastructure',
+                tools: ['Read', 'Write', 'Edit', 'Bash', 'Grep', 'Glob', 'LS', 'TodoWrite', 'Task'],
+                position: { x: 550, y: 200 },
+                connections: ['deployment-manager', 'monitoring-specialist'],
+                metrics: { tasks: 45, success: 99, avgTime: 180 },
+                circuitBreaker: { state: 'closed', failures: 0, threshold: 3 }
+            },
+            {
+                id: 'operations-team-lead',
+                name: 'Operations Team Lead',
+                icon: '⚙️',
+                status: 'active',
+                description: 'Ensures smooth day-to-day operations',
+                hierarchy: 2,
+                team: 'operations',
+                tools: ['Read', 'Write', 'Edit', 'Bash', 'Grep', 'Glob', 'LS', 'TodoWrite', 'Task'],
+                position: { x: 750, y: 200 },
+                connections: ['file-manager', 'health-monitor'],
+                metrics: { tasks: 92, success: 96, avgTime: 65 },
+                circuitBreaker: { state: 'closed', failures: 1, threshold: 5 }
+            },
+            
+            // Development Team Workers
+            {
+                id: 'code-architect',
+                name: 'Code Architect',
+                icon: '🏛️',
+                status: 'active',
+                description: 'Designs system architecture',
+                hierarchy: 3,
+                team: 'development',
+                tools: ['Read', 'Write', 'Edit', 'MultiEdit', 'Grep', 'Glob', 'LS'],
+                position: { x: 50, y: 350 },
+                connections: [],
+                metrics: { tasks: 34, success: 100, avgTime: 250 },
+                circuitBreaker: { state: 'closed', failures: 0, threshold: 3 }
+            },
+            {
+                id: 'feature-implementer',
+                name: 'Feature Implementer',
+                icon: '🚀',
+                status: 'active',
+                description: 'Implements new features',
+                hierarchy: 3,
+                team: 'development',
+                tools: ['Read', 'Write', 'Edit', 'MultiEdit', 'Bash', 'Grep', 'Glob', 'LS'],
+                position: { x: 150, y: 350 },
+                connections: [],
+                metrics: { tasks: 156, success: 95, avgTime: 180 },
+                circuitBreaker: { state: 'closed', failures: 2, threshold: 5 }
+            },
+            {
+                id: 'refactor-specialist',
+                name: 'Refactor Specialist',
+                icon: '🔄',
+                status: 'idle',
+                description: 'Optimizes and refactors code',
+                hierarchy: 3,
+                team: 'development',
+                tools: ['Read', 'Write', 'Edit', 'MultiEdit', 'Bash', 'Grep', 'Glob', 'LS'],
+                position: { x: 250, y: 350 },
+                connections: [],
+                metrics: { tasks: 23, success: 92, avgTime: 340 },
+                circuitBreaker: { state: 'closed', failures: 0, threshold: 2 }
+            },
+            
+            // Quality Team Workers
+            {
+                id: 'test-engineer',
+                name: 'Test Engineer',
+                icon: '🧪',
+                status: 'active',
+                description: 'Designs and implements tests',
+                hierarchy: 3,
+                team: 'quality',
+                tools: ['Read', 'Write', 'Edit', 'Bash', 'Grep', 'Glob', 'LS'],
+                position: { x: 350, y: 350 },
+                connections: [],
+                metrics: { tasks: 89, success: 96, avgTime: 120 },
+                circuitBreaker: { state: 'closed', failures: 1, threshold: 4 }
+            },
+            {
+                id: 'code-reviewer',
+                name: 'Code Reviewer',
+                icon: '👁️',
+                status: 'active',
+                description: 'Reviews code quality',
+                hierarchy: 3,
+                team: 'quality',
+                tools: ['Read', 'Grep', 'Glob', 'LS'],
+                position: { x: 450, y: 350 },
+                connections: [],
+                metrics: { tasks: 67, success: 100, avgTime: 45 },
+                circuitBreaker: { state: 'closed', failures: 0, threshold: 5 }
+            },
+            {
+                id: 'security-scanner',
+                name: 'Security Scanner',
+                icon: '🔒',
+                status: 'active',
+                description: 'Scans for vulnerabilities',
+                hierarchy: 3,
+                team: 'quality',
+                tools: ['Read', 'Bash', 'Grep', 'Glob', 'LS'],
+                position: { x: 350, y: 450 },
+                connections: [],
+                metrics: { tasks: 156, success: 99, avgTime: 78 },
+                circuitBreaker: { state: 'closed', failures: 0, threshold: 1 }
+            },
+            
+            // Infrastructure Team Workers
+            {
+                id: 'deployment-manager',
+                name: 'Deployment Manager',
+                icon: '📦',
+                status: 'active',
+                description: 'Manages deployments',
+                hierarchy: 3,
+                team: 'infrastructure',
+                tools: ['Read', 'Write', 'Bash', 'Grep', 'LS'],
+                position: { x: 550, y: 350 },
+                connections: [],
+                metrics: { tasks: 32, success: 98, avgTime: 290 },
+                circuitBreaker: { state: 'closed', failures: 0, threshold: 2 }
+            },
+            {
+                id: 'monitoring-specialist',
+                name: 'Monitoring Specialist',
+                icon: '📊',
+                status: 'active',
+                description: 'Monitors system health',
+                hierarchy: 3,
+                team: 'infrastructure',
+                tools: ['Read', 'Bash', 'Grep', 'LS'],
+                position: { x: 650, y: 350 },
+                connections: [],
+                metrics: { tasks: 234, success: 99.5, avgTime: 23 },
+                circuitBreaker: { state: 'closed', failures: 0, threshold: 6 }
+            },
+            
+            // Operations Team Workers
+            {
+                id: 'file-manager',
+                name: 'File Manager',
+                icon: '📁',
+                status: 'idle',
+                description: 'Manages file organization',
+                hierarchy: 3,
+                team: 'operations',
+                tools: ['Bash', 'LS', 'Glob', 'Read'],
+                position: { x: 750, y: 350 },
+                connections: [],
+                metrics: { tasks: 45, success: 95, avgTime: 120 },
+                circuitBreaker: { state: 'closed', failures: 1, threshold: 2 }
+            },
+            {
+                id: 'health-monitor',
+                name: 'Health Monitor',
+                icon: '🏥',
+                status: 'active',
+                description: 'Monitors overall health',
+                hierarchy: 3,
+                team: 'operations',
+                tools: ['Read', 'Bash', 'Grep', 'LS'],
+                position: { x: 850, y: 350 },
+                connections: [],
+                metrics: { tasks: 189, success: 99, avgTime: 34 },
+                circuitBreaker: { state: 'closed', failures: 0, threshold: 5 }
+            },
+            
+            // Legacy Agents
+            {
+                id: 'hub-keeper',
+                name: 'Hub Keeper',
+                icon: '🧠',
+                status: 'active',
+                description: 'Master orchestrator and conflict resolver',
+                hierarchy: 2,
+                team: 'orchestration',
+                tools: ['Read', 'Write', 'Edit', 'MultiEdit', 'Bash', 'Grep', 'Glob', 'LS', 'TodoWrite', 'Task'],
+                position: { x: 400, y: 500 },
+                connections: ['guardian-enforcer', 'watchdog'],
+                metrics: { tasks: 45, success: 98, avgTime: 67 },
+                circuitBreaker: { state: 'closed', failures: 0, threshold: 5 }
+            },
+            {
+                id: 'guardian-enforcer',
+                name: 'Guardian Enforcer',
+                icon: '🛡️',
+                status: 'active',
+                description: 'Enforces PROJECT_guardian rules',
+                hierarchy: 3,
+                team: 'operations',
+                tools: ['Bash', 'Read', 'Grep', 'LS'],
+                position: { x: 300, y: 600 },
+                connections: [],
+                metrics: { tasks: 23, success: 100, avgTime: 45 },
+                circuitBreaker: { state: 'closed', failures: 0, threshold: 5 }
+            },
+            {
+                id: 'watchdog',
+                name: 'Watchdog',
+                icon: '🐕‍🦺',
+                status: 'active',
+                description: '24/7 hub monitoring',
+                hierarchy: 3,
+                team: 'operations',
+                tools: ['Read', 'Bash', 'Grep', 'Glob', 'LS'],
+                position: { x: 500, y: 600 },
+                connections: [],
+                metrics: { tasks: 156, success: 97, avgTime: 23 },
+                circuitBreaker: { state: 'closed', failures: 0, threshold: 5 }
+            }
+        ];
+
+        // Global configuration
+        const globalConfig = {
+            autoRefresh: true,
+            realTimeMonitoring: true,
+            refreshInterval: 2000,
+            maxConcurrentTasks: 5,
+            timeout: 30,
+            failureThreshold: 5
+        };
+
+        let selectedAgent = null;
+        let isPaused = false;
+        let refreshIntervalId = null;
+
+        // Initialize dashboard
+        function initDashboard() {
+            renderAgentList();
+            renderNetworkGraph();
+            renderCommunicationFlow();
+            renderHierarchyView();
+            renderCircuitBreakers();
+            updateMetrics();
+            startRealTimeUpdates();
+        }
+
+        // Render agent list in sidebar
+        function renderAgentList() {
+            const agentListElement = document.getElementById('agentList');
+            agentListElement.innerHTML = '';
+
+            // Group agents by team
+            const teams = {};
+            agents.forEach(agent => {
+                if (!teams[agent.team]) {
+                    teams[agent.team] = [];
+                }
+                teams[agent.team].push(agent);
+            });
+
+            // Render each team
+            Object.entries(teams).forEach(([teamName, teamAgents]) => {
+                const teamSection = document.createElement('div');
+                teamSection.style.marginBottom = '20px';
+                
+                const teamHeader = document.createElement('h4');
+                teamHeader.style.color = 'var(--text-secondary)';
+                teamHeader.style.fontSize = '12px';
+                teamHeader.style.textTransform = 'uppercase';
+                teamHeader.style.marginBottom = '10px';
+                teamHeader.textContent = teamName;
+                teamSection.appendChild(teamHeader);
+
+                teamAgents.forEach(agent => {
+                    const agentElement = document.createElement('div');
+                    agentElement.className = `agent-item ${selectedAgent === agent.id ? 'active' : ''}`;
+                    agentElement.onclick = () => selectAgent(agent.id);
+                    
+                    agentElement.innerHTML = `
+                        <div class="agent-name">${agent.icon} ${agent.name}</div>
+                        <div class="agent-status">
+                            <span class="status-dot status-${agent.status}"></span>
+                            ${agent.status.toUpperCase()} • L${agent.hierarchy} • ${agent.metrics.tasks} tasks
+                        </div>
+                    `;
+                    
+                    teamSection.appendChild(agentElement);
+                });
+
+                agentListElement.appendChild(teamSection);
+            });
+        }
+
+        // Render network graph
+        function renderNetworkGraph() {
+            const networkElement = document.getElementById('networkGraph');
+            networkElement.innerHTML = '';
+
+            // Create agent nodes
+            agents.forEach(agent => {
+                const nodeElement = document.createElement('div');
+                nodeElement.className = `agent-node ${selectedAgent === agent.id ? 'selected' : ''}`;
+                nodeElement.style.left = `${agent.position.x}px`;
+                nodeElement.style.top = `${agent.position.y}px`;
+                nodeElement.onclick = () => selectAgent(agent.id);
+
+                // Color based on hierarchy
+                if (agent.hierarchy === 1) {
+                    nodeElement.style.borderColor = 'var(--accent-purple)';
+                    nodeElement.style.boxShadow = 'var(--glow-purple)';
+                } else if (agent.hierarchy === 2) {
+                    nodeElement.style.borderColor = 'var(--accent-blue)';
+                }
+
+                nodeElement.innerHTML = `
+                    <div class="agent-icon">${agent.icon}</div>
+                    <div class="agent-title">${agent.name}</div>
+                `;
+
+                networkElement.appendChild(nodeElement);
+            });
+
+            // Create connection lines
+            agents.forEach(agent => {
+                agent.connections.forEach(connectionId => {
+                    const targetAgent = agents.find(a => a.id === connectionId);
+                    if (targetAgent) {
+                        const line = createConnectionLine(agent.position, targetAgent.position);
+                        networkElement.appendChild(line);
+                    }
+                });
+            });
+        }
+
+        // Create connection line between two points
+        function createConnectionLine(start, end) {
+            const line = document.createElement('div');
+            line.className = 'connection-line';
+            
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            
+            line.style.left = `${start.x + 60}px`;
+            line.style.top = `${start.y + 40}px`;
+            line.style.width = `${length}px`;
+            line.style.transform = `rotate(${angle}deg)`;
+            
+            return line;
+        }
+
+        // Render communication flow
+        function renderCommunicationFlow() {
+            const flowElement = document.getElementById('communicationFlow');
+            flowElement.setAttribute('viewBox', '0 0 1000 800');
+            flowElement.innerHTML = '';
+
+            agents.forEach((agent, index) => {
+                agent.connections.forEach(connectionId => {
+                    const targetAgent = agents.find(a => a.id === connectionId);
+                    if (targetAgent) {
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        const startX = agent.position.x + 60;
+                        const startY = agent.position.y + 40;
+                        const endX = targetAgent.position.x + 60;
+                        const endY = targetAgent.position.y + 40;
+                        
+                        const controlX = (startX + endX) / 2;
+                        const controlY = Math.min(startY, endY) - 50;
+                        
+                        path.setAttribute('d', `M ${startX} ${startY} Q ${controlX} ${controlY} ${endX} ${endY}`);
+                        path.className = 'flow-line';
+                        path.style.animationDelay = `${index * 0.3}s`;
+                        
+                        flowElement.appendChild(path);
+                    }
+                });
+            });
+        }
+
+        // Render hierarchy view
+        function renderHierarchyView() {
+            const hierarchyElement = document.getElementById('hierarchyView');
+            hierarchyElement.innerHTML = '';
+
+            // Group agents by hierarchy level
+            const levels = {};
+            agents.forEach(agent => {
+                if (!levels[agent.hierarchy]) {
+                    levels[agent.hierarchy] = [];
+                }
+                levels[agent.hierarchy].push(agent);
+            });
+
+            // Render each level
+            Object.entries(levels).sort((a, b) => a[0] - b[0]).forEach(([level, levelAgents]) => {
+                const levelY = 100 + (level - 1) * 200;
+                const spacing = 900 / levelAgents.length;
+                
+                levelAgents.forEach((agent, index) => {
+                    const x = 50 + index * spacing;
+                    const y = levelY;
+                    
+                    const node = createHierarchyNode(agent, x, y, parseInt(level));
+                    hierarchyElement.appendChild(node);
+                    
+                    // Connect to supervisor
+                    if (agent.hierarchy > 1) {
+                        const supervisor = agents.find(a => a.id === agent.connections[0] || 
+                                                             agent.team === a.team && a.hierarchy === agent.hierarchy - 1);
+                        if (supervisor) {
+                            const supervisorIndex = levels[supervisor.hierarchy].indexOf(supervisor);
+                            const supervisorX = 50 + supervisorIndex * (900 / levels[supervisor.hierarchy].length);
+                            const supervisorY = 100 + (supervisor.hierarchy - 1) * 200;
+                            
+                            const line = createConnectionLine({ x: supervisorX, y: supervisorY }, { x, y });
+                            hierarchyElement.appendChild(line);
+                        }
+                    }
+                });
+            });
+        }
+
+        // Create hierarchy node
+        function createHierarchyNode(agent, x, y, level) {
+            const node = document.createElement('div');
+            node.className = `agent-node ${selectedAgent === agent.id ? 'selected' : ''}`;
+            node.style.left = `${x}px`;
+            node.style.top = `${y}px`;
+            node.onclick = () => selectAgent(agent.id);
+            
+            // Style based on hierarchy level
+            if (level === 1) {
+                node.style.borderColor = 'var(--accent-purple)';
+                node.style.boxShadow = 'var(--glow-purple)';
+                node.style.width = '140px';
+                node.style.height = '90px';
+            } else if (level === 2) {
+                node.style.borderColor = 'var(--accent-blue)';
+                node.style.width = '130px';
+                node.style.height = '85px';
+            }
+            
+            node.innerHTML = `
+                <div class="agent-icon">${agent.icon}</div>
+                <div class="agent-title">${agent.name}</div>
+            `;
+            
+            return node;
+        }
+
+        // Render circuit breakers
+        function renderCircuitBreakers() {
+            const circuitContainer = document.getElementById('circuitBreakers');
+            circuitContainer.innerHTML = '';
+
+            // Show circuit breakers for key agents
+            const keyAgents = agents.filter(a => a.circuitBreaker && 
+                                               (a.circuitBreaker.failures > 0 || a.id.includes('enforcer') || a.id.includes('cleaner')));
+            
+            keyAgents.forEach(agent => {
+                const circuitElement = document.createElement('div');
+                circuitElement.className = 'circuit-breaker';
+                
+                const stateClass = agent.circuitBreaker.state === 'closed' ? 'circuit-closed' : 
+                                   agent.circuitBreaker.state === 'open' ? 'circuit-open' : 'circuit-half-open';
+                
+                circuitElement.innerHTML = `
+                    <div class="circuit-status">
+                        <span class="circuit-name">${agent.name}</span>
+                        <span class="circuit-state ${stateClass}">${agent.circuitBreaker.state.toUpperCase()}</span>
+                    </div>
+                    <div class="circuit-metrics">
+                        <div class="metric">
+                            <div class="metric-value">${agent.circuitBreaker.failures}</div>
+                            <div class="metric-label">Failures</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${agent.metrics.success}%</div>
+                            <div class="metric-label">Success</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${agent.metrics.avgTime}ms</div>
+                            <div class="metric-label">Avg Time</div>
+                        </div>
+                    </div>
+                `;
+                
+                circuitContainer.appendChild(circuitElement);
+            });
+        }
+
+        // Select agent
+        function selectAgent(agentId) {
+            selectedAgent = agentId;
+            renderAgentList();
+            renderNetworkGraph();
+            renderHierarchyView();
+            
+            // Show agent details
+            const agent = agents.find(a => a.id === agentId);
+            if (agent) {
+                showAgentDetails(agent);
+            }
+        }
+
+        // Show agent details
+        function showAgentDetails(agent) {
+            const infoPanel = document.getElementById('agentInfo');
+            const detailsElement = document.getElementById('agentDetails');
+            
+            detailsElement.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">Name</div>
+                    <div class="info-value">${agent.icon} ${agent.name}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Description</div>
+                    <div class="info-value">${agent.description}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Team</div>
+                    <div class="info-value">${agent.team}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Hierarchy Level</div>
+                    <div class="info-value">Level ${agent.hierarchy}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div class="info-value">${agent.status.toUpperCase()}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Tasks Completed</div>
+                    <div class="info-value">${agent.metrics.tasks}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Success Rate</div>
+                    <div class="info-value">${agent.metrics.success}%</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Available Tools</div>
+                    <div class="tool-list">
+                        ${agent.tools.map(tool => `<span class="tool-tag">${tool}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+            
+            infoPanel.classList.add('show');
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Add active class to selected tab and content
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            
+            // Hide agent info panel when switching tabs
+            document.getElementById('agentInfo').classList.remove('show');
+        }
+
+        // Toggle settings
+        function toggleSetting(element) {
+            element.classList.toggle('active');
+            
+            // Update global config
+            const label = element.previousElementSibling.textContent;
+            if (label === 'Auto-refresh') {
+                globalConfig.autoRefresh = element.classList.contains('active');
+            } else if (label === 'Real-time monitoring') {
+                globalConfig.realTimeMonitoring = element.classList.contains('active');
+            }
+        }
+
+        // Refresh data
+        function refreshData() {
+            const refreshBtn = document.querySelector('.refresh-btn');
+            refreshBtn.classList.add('spinning');
+            
+            setTimeout(() => {
+                refreshBtn.classList.remove('spinning');
+                updateMetrics();
+                renderCircuitBreakers();
+            }, 1000);
+        }
+
+        // Toggle pause
+        function togglePause() {
+            isPaused = !isPaused;
+            const pauseIcon = document.getElementById('pauseIcon');
+            pauseIcon.textContent = isPaused ? '▶' : '⏸';
+        }
+
+        // Update metrics
+        function updateMetrics() {
+            // Calculate real metrics
+            const activeAgents = agents.filter(a => a.status === 'active').length;
+            const totalTasks = agents.reduce((sum, agent) => sum + agent.metrics.tasks, 0);
+            const avgResponse = Math.round(agents.reduce((sum, agent) => sum + agent.metrics.avgTime, 0) / agents.length);
+            const systemHealth = Math.round(agents.reduce((sum, agent) => sum + agent.metrics.success, 0) / agents.length);
+            
+            // Update display
+            document.getElementById('activeAgents').textContent = activeAgents;
+            document.getElementById('totalTasks').textContent = totalTasks;
+            document.getElementById('avgResponse').textContent = avgResponse + 'ms';
+            document.getElementById('systemHealth').textContent = systemHealth + '%';
+            
+            // Update health indicator
+            const healthIndicator = document.querySelector('.health-indicator');
+            healthIndicator.className = 'health-indicator';
+            if (systemHealth >= 95) {
+                healthIndicator.classList.add('health-excellent');
+            } else if (systemHealth >= 85) {
+                healthIndicator.classList.add('health-good');
+            } else if (systemHealth >= 70) {
+                healthIndicator.classList.add('health-warning');
+            } else {
+                healthIndicator.classList.add('health-critical');
+            }
+            
+            // Simulate some dynamic changes
+            if (!isPaused && globalConfig.realTimeMonitoring) {
+                agents.forEach(agent => {
+                    // Random status changes (5% chance)
+                    if (Math.random() < 0.05) {
+                        agent.status = agent.status === 'active' ? 'idle' : 'active';
+                    }
+                    
+                    // Update metrics
+                    agent.metrics.tasks += Math.floor(Math.random() * 3);
+                    agent.metrics.avgTime = Math.max(20, agent.metrics.avgTime + Math.floor(Math.random() * 10) - 5);
+                    
+                    // Simulate circuit breaker changes
+                    if (agent.circuitBreaker && Math.random() < 0.02) {
+                        agent.circuitBreaker.failures = Math.max(0, agent.circuitBreaker.failures + Math.floor(Math.random() * 3) - 1);
+                        if (agent.circuitBreaker.failures >= agent.circuitBreaker.threshold) {
+                            agent.circuitBreaker.state = 'open';
+                        } else if (agent.circuitBreaker.failures > 0) {
+                            agent.circuitBreaker.state = 'half-open';
+                        } else {
+                            agent.circuitBreaker.state = 'closed';
+                        }
+                    }
+                });
+                
+                renderAgentList();
+                renderCircuitBreakers();
+            }
+        }
+
+        // Start real-time updates
+        function startRealTimeUpdates() {
+            const interval = parseInt(document.getElementById('refreshInterval').value);
+            
+            if (refreshIntervalId) {
+                clearInterval(refreshIntervalId);
+            }
+            
+            refreshIntervalId = setInterval(() => {
+                if (!isPaused && globalConfig.autoRefresh) {
+                    updateMetrics();
+                }
+            }, interval);
+        }
+
+        // Handle refresh interval changes
+        document.getElementById('refreshInterval').addEventListener('change', (e) => {
+            globalConfig.refreshInterval = parseInt(e.target.value);
+            startRealTimeUpdates();
+        });
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+
+        // Add some interactive animations
+        document.addEventListener('mousemove', (e) => {
+            const nodes = document.querySelectorAll('.agent-node');
+            nodes.forEach(node => {
+                const rect = node.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const distance = Math.sqrt(Math.pow(e.clientX - centerX, 2) + Math.pow(e.clientY - centerY, 2));
+                
+                if (distance < 150) {
+                    const intensity = (150 - distance) / 150;
+                    node.style.transform = `scale(${1 + intensity * 0.1})`;
+                } else {
+                    node.style.transform = 'scale(1)';
+                }
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                e.preventDefault();
+                togglePause();
+            } else if (e.key === 'r') {
+                refreshData();
+            } else if (e.key === 'Escape') {
+                selectedAgent = null;
+                renderAgentList();
+                renderNetworkGraph();
+                renderHierarchyView();
+                document.getElementById('agentInfo').classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>

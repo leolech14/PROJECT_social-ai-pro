@@ -14,7 +14,7 @@ class DemoGenerator {
     // Initialize Google AI if available
     if (this.googleKey) {
       this.genAI = new GoogleGenerativeAI(this.googleKey)
-      this.googleModel = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+      this.googleModel = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
     }
   }
 
