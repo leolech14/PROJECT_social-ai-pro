@@ -16,6 +16,17 @@ import {
   videoGenerationLimiter,
   scriptGenerationLimiter
 } from './src/middleware/rateLimiter.js'
+import validate from './src/middleware/validate.js'
+import {
+  registerSchema,
+  loginSchema,
+  generateScriptSchema,
+  generateDemosSchema,
+  voicePreviewSchema,
+  generateVoiceSchema,
+  searchMediaSchema,
+  assembleVideoSchema
+} from './src/validation/schemas.js'
 
 dotenv.config()
 
@@ -63,17 +74,9 @@ app.get('/api/health', (req, res) => {
 })
 
 // Authentication routes
-app.post('/api/auth/register', authLimiter, async (req, res) => {
+app.post('/api/auth/register', authLimiter, validate(registerSchema), async (req, res) => {
   try {
     const { email, password, name } = req.body
-    
-    if (!email || !password || !name) {
-      return res.status(400).json({
-        success: false,
-        error: 'All fields are required'
-      })
-    }
-    
     const result = await authService.createUser({ email, password, name })
     res.json({ success: true, ...result })
   } catch (error) {
@@ -84,17 +87,9 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
   }
 })
 
-app.post('/api/auth/login', loginLimiter, async (req, res) => {
+app.post('/api/auth/login', loginLimiter, validate(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body
-    
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Email and password are required'
-      })
-    }
-    
     const result = await authService.loginUser({ email, password })
     res.json({ success: true, ...result })
   } catch (error) {
@@ -124,32 +119,66 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 })
 
 // Script generation endpoint
-app.post('/api/generate-script', scriptGenerationLimiter, optionalAuth, async (req, res) => {
+app.post('/api/generate-script', scriptGenerationLimiter, optionalAuth, validate(generateScriptSchema), async (req, res) => {
   try {
     const { description, tone, platforms, duration } = req.body
-    
-    // Validate input
-    if (!description || !tone || !platforms || !duration) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Missing required fields' 
-      })
-    }
-    
+
     // Generate script using AI
     const result = await scriptGenerator.generateScript({
       description,
       tone,
       platforms,
-      duration
+      duration,
+      userId: req.user?.userId
     })
-    
+
     res.json(result)
   } catch (error) {
     console.error('Script generation error:', error)
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to generate script' 
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate script'
+    })
+  }
+})
+
+app.post('/api/generate-demos', validate(generateDemosSchema), async (req, res) => {
+  try {
+    const { description, tone, platforms, duration } = req.body
+    const result = await demoGenerator.generateDemoSentences({
+      description,
+      tone,
+      platforms,
+      duration: duration || 30
+    })
+    res.json(result)
+  } catch (error) {
+    console.error('Demo generation error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate demo sentences'
+    })
+  }
+})
+
+app.post('/api/voice-preview', validate(voicePreviewSchema), async (req, res) => {
+  try {
+    const { voiceId, demoText, voiceInstruction } = req.body
+    const limitedText = demoText.slice(0, 200)
+    const result = await voiceGenerator.generateVoice({
+      text: limitedText,
+      voiceId,
+      scriptId: `demo_${Date.now()}`,
+      userId: null,
+      voiceInstruction,
+      isDemo: true
+    })
+    res.json(result)
+  } catch (error) {
+    console.error('Voice preview error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate voice preview'
     })
   }
 })
@@ -168,81 +197,11 @@ app.get('/api/voices', async (req, res) => {
   }
 })
 
-// Generate contextual demo sentences for voices
-app.post('/api/generate-demos', async (req, res) => {
-  try {
-    const { description, tone, platforms, duration } = req.body
-    
-    if (!description || !tone || !platforms) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Missing required fields: description, tone, platforms' 
-      })
-    }
-    
-    const result = await demoGenerator.generateDemoSentences({
-      description,
-      tone,
-      platforms,
-      duration: duration || 30
-    })
-    
-    res.json(result)
-  } catch (error) {
-    console.error('Demo generation error:', error)
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to generate demo sentences' 
-    })
-  }
-})
-
-// Generate voice preview with demo text
-app.post('/api/voice-preview', async (req, res) => {
-  try {
-    const { voiceId, demoText, voiceInstruction } = req.body
-    
-    if (!voiceId || !demoText) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Missing required fields: voiceId, demoText' 
-      })
-    }
-    
-    // Limit demo text length for performance
-    const limitedText = demoText.slice(0, 200)
-    
-    const result = await voiceGenerator.generateVoice({
-      text: limitedText,
-      voiceId,
-      scriptId: `demo_${Date.now()}`,
-      userId: null, // Demos don't require user
-      voiceInstruction,
-      isDemo: true // Flag for demo mode
-    })
-    
-    res.json(result)
-  } catch (error) {
-    console.error('Voice preview error:', error)
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to generate voice preview' 
-    })
-  }
-})
-
 // Voice generation endpoint
-app.post('/api/generate-voice', optionalAuth, async (req, res) => {
+app.post('/api/generate-voice', optionalAuth, validate(generateVoiceSchema), async (req, res) => {
   try {
     const { scriptId, voiceId, text, voiceInstruction } = req.body
-    
-    if (!scriptId || !voiceId || !text) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Missing required fields' 
-      })
-    }
-    
+
     // Check if voice requires authentication (premium voices)
     const voiceInfo = await voiceGenerator.getVoiceInfo(voiceId)
     if (voiceInfo.premium && !req.user) {
@@ -251,7 +210,7 @@ app.post('/api/generate-voice', optionalAuth, async (req, res) => {
         error: 'Premium voices require authentication'
       })
     }
-    
+
     const result = await voiceGenerator.generateVoice({
       text,
       voiceId,
@@ -259,65 +218,46 @@ app.post('/api/generate-voice', optionalAuth, async (req, res) => {
       userId: req.user?.userId,
       voiceInstruction // New 2025 feature for OpenAI voices
     })
-    
+
     res.json(result)
   } catch (error) {
     console.error('Voice generation error:', error)
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to generate voice' 
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate voice'
     })
   }
 })
 
 // Search media endpoint
-app.post('/api/search-media', optionalAuth, async (req, res) => {
+app.post('/api/search-media', optionalAuth, validate(searchMediaSchema), async (req, res) => {
   try {
-    const { query, type = 'video', duration, count } = req.body
-    
-    if (!query) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Query is required' 
-      })
-    }
-    
+    const { query, type, duration, count } = req.body
+
     let result
     if (type === 'video') {
       result = await mediaService.searchVideos(query, duration)
     } else if (type === 'image') {
       result = await mediaService.searchImages(query, count)
-    } else if (type === 'music') {
-      result = await mediaService.getBackgroundMusic(query)
     } else {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Invalid media type' 
-      })
+      result = await mediaService.getBackgroundMusic(query)
     }
-    
+
     res.json(result)
   } catch (error) {
     console.error('Media search error:', error)
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to search media' 
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search media'
     })
   }
 })
 
 // Video assembly endpoint
-app.post('/api/assemble-video', videoGenerationLimiter, authenticateToken, checkVideoLimit, async (req, res) => {
+app.post('/api/assemble-video', videoGenerationLimiter, authenticateToken, checkVideoLimit, validate(assembleVideoSchema), async (req, res) => {
   try {
     const { scriptId, voiceId, mediaIds, musicId, settings } = req.body
-    
-    if (!scriptId || !voiceId) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Missing required fields' 
-      })
-    }
-    
+
     // In production, this would:
     // 1. Fetch the voice audio file
     // 2. Download selected media files
