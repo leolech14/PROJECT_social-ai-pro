@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Mic, Play, Pause, ChevronDown, Volume2, Sparkles, 
+import {
+  Mic, Play, Pause, ChevronDown, Volume2, Sparkles,
   Globe, Zap, Star, Info, Search, Filter
 } from 'lucide-react'
 
-const VoiceSelector = ({ onVoiceSelect, selectedVoice, onBack, onNext, userInput }) => {
+const VoiceSelection = ({ onVoiceSelect, selectedVoice, onBack, onNext, userInput }) => {
   const [voices, setVoices] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -603,4 +603,4 @@ const VoiceSelector = ({ onVoiceSelect, selectedVoice, onBack, onNext, userInput
   )
 }
 
-export default VoiceSelector
+export default VoiceSelection
