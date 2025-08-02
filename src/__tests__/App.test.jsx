@@ -4,14 +4,13 @@ import App from '../App'
 // Mock fetch
 global.fetch = jest.fn()
 
-// Mock VoiceSelector to avoid complex dependencies in tests
-jest.mock('../components/VoiceSelector', () => {
+// Mock VoiceSelection to avoid complex dependencies in tests
+jest.mock('../components/VoiceSelection', () => {
   const React = require('react')
   return () => React.createElement('div', { 'data-testid': 'voice-selector' })
 })
 
-// Skipping these tests as the App component relies on complex browser APIs
-describe.skip('App Component', () => {
+describe('App Component', () => {
   beforeEach(() => {
     fetch.mockClear()
   })
@@ -146,14 +145,18 @@ describe.skip('App Component', () => {
       expect(screen.getByText('Platforms')).toBeInTheDocument()
     })
     
-    const tiktokButton = screen.getAllByText(/TikTok|Tik/i)[0]
-    
+    const getTiktokButton = () => screen.getByRole('button', { name: /TikTok|Tik/i })
+
     // Click to select
-    fireEvent.click(tiktokButton)
-    expect(tiktokButton.closest('button')).toHaveClass('border-white/30')
-    
+    fireEvent.click(getTiktokButton())
+    await waitFor(() =>
+      expect(getTiktokButton()).toHaveClass('border-white/30')
+    )
+
     // Click to deselect
-    fireEvent.click(tiktokButton)
-    expect(tiktokButton.closest('button')).not.toHaveClass('border-white/30')
+    fireEvent.click(getTiktokButton())
+    await waitFor(() =>
+      expect(getTiktokButton()).not.toHaveClass('border-white/30')
+    )
   })
 })

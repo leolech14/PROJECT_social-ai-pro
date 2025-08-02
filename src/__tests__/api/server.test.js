@@ -41,6 +41,20 @@ jest.mock('../../services/mediaService.js', () => {
   }))
 })
 
+jest.mock('../../services/authService.js', () => {
+  return jest.fn().mockImplementation(() => ({
+    createUser: jest.fn().mockResolvedValue({
+      user: { id: 1, email: 'test@example.com', name: 'Tester' },
+      token: 'mock-token'
+    }),
+    loginUser: jest.fn().mockResolvedValue({
+      user: { id: 1, email: 'test@example.com', name: 'Tester' },
+      token: 'mock-token'
+    }),
+    getUserById: jest.fn()
+  }))
+})
+
 describe('API Endpoints', () => {
   let app
 
