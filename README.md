@@ -96,6 +96,19 @@ Server sessions are stored in PostgreSQL using `connect-pg-simple`. Set
 session table is created automatically on startup, or you can create it
 manually using the SQL in [`docs/SESSION_TABLE_SETUP.md`](docs/SESSION_TABLE_SETUP.md).
 
+## 🗄️ Database Setup
+
+The application now stores user data in PostgreSQL. To configure the database:
+
+1. **Create a database** and update `DATABASE_URL` in your `.env` file. See `.env.example` for the format.
+2. **Run migrations** to create the required tables:
+
+   ```bash
+   npm run migrate
+   ```
+
+   This executes all SQL files in the `migrations/` directory.
+
 ## 🎨 UI/UX Features
 
 - **Dark Glassmorphic Design**: Modern, premium aesthetic

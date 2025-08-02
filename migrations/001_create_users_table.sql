@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  password TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  subscription TEXT NOT NULL DEFAULT 'free',
+  videos_created INTEGER NOT NULL DEFAULT 0,
+  monthly_limit INTEGER NOT NULL DEFAULT 3
+);

@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "test": "NODE_ENV=test jest",
     "test:watch": "NODE_ENV=test jest --watch",
-    "test:coverage": "NODE_ENV=test jest --coverage"
+    "test:coverage": "NODE_ENV=test jest --coverage",
+    "migrate": "node scripts/migrate.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -27,6 +28,7 @@
     "express-rate-limit": "^8.0.1",
     "express-session": "^1.18.2",
     "framer-motion": "^12.23.12",
+    "pg": "^8.13.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.536.0",
     "postcss": "^8.5.6",
