@@ -89,12 +89,22 @@ See `.env.example` for all available configuration options:
 - `PEXELS_API_KEY` - For stock footage (optional)
 - `VITE_API_URL` - Backend API URL
 
-## 🗃️ Session Storage
+## 🗄️ Database Setup
 
-Server sessions are stored in PostgreSQL using `connect-pg-simple`. Set
-`DATABASE_URL` in your environment to point at your Postgres instance. The
-session table is created automatically on startup, or you can create it
-manually using the SQL in [`docs/SESSION_TABLE_SETUP.md`](docs/SESSION_TABLE_SETUP.md).
+The application stores user data and sessions in PostgreSQL. To configure the database:
+
+1. **Create a database** and update `DATABASE_URL` in your `.env` file. See `.env.example` for the format.
+2. **Run migrations** to create the required tables:
+
+   ```bash
+   npm run migrate
+   ```
+
+   This executes all SQL files in the `migrations/` directory.
+
+### Session Storage
+
+Server sessions are stored in PostgreSQL using `connect-pg-simple`. The session table is created automatically on startup, or you can create it manually using the SQL in [`docs/SESSION_TABLE_SETUP.md`](docs/SESSION_TABLE_SETUP.md).
 
 ## 🎨 UI/UX Features
 
