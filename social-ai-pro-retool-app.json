@@ -1,0 +1,449 @@
+{
+  "version": "3.0.0",
+  "appTemplate": {
+    "uuid": "social-ai-pro",
+    "appName": "Social AI Pro",
+    "appSlug": "social-ai-pro",
+    "createdAt": "2025-01-31T00:00:00.000Z",
+    "updatedAt": "2025-01-31T00:00:00.000Z",
+    "pageCount": 1,
+    "isMobileApp": false,
+    "isGlobalWidget": false,
+    "pages": [
+      {
+        "name": "Social AI Pro",
+        "uuid": "main-page",
+        "slug": "main",
+        "page": {
+          "canvas": {
+            "type": "CANVAS_WIDGET",
+            "widgetName": "MainCanvas",
+            "displayName": "Canvas",
+            "parentColumnSpace": 1,
+            "parentRowSpace": 1,
+            "children": [
+              {
+                "type": "CONTAINER_WIDGET",
+                "widgetName": "MainContainer",
+                "backgroundColor": "rgb(17, 24, 39)",
+                "children": [
+                  {
+                    "type": "TEXT_WIDGET",
+                    "widgetName": "AppTitle",
+                    "text": "Social Media Science",
+                    "fontSize": "2rem",
+                    "fontWeight": "bold",
+                    "textAlign": "CENTER",
+                    "textColor": "#ffffff",
+                    "isVisible": "{{appState.stage === 0}}"
+                  },
+                  {
+                    "type": "TEXT_WIDGET",
+                    "widgetName": "AppSubtitle",
+                    "text": "Transform user inputs into viral-worthy video scripts using research-backed principles and AI intelligence",
+                    "fontSize": "1rem",
+                    "textAlign": "CENTER",
+                    "textColor": "#9CA3AF",
+                    "isVisible": "{{appState.stage === 0}}"
+                  },
+                  {
+                    "type": "BUTTON_WIDGET",
+                    "widgetName": "StartButton",
+                    "text": "Start Creating",
+                    "buttonColor": "#7C3AED",
+                    "onClick": "{{setAppState({ stage: 1 })}}",
+                    "isVisible": "{{appState.stage === 0}}"
+                  },
+                  {
+                    "type": "FORM_WIDGET",
+                    "widgetName": "InputForm",
+                    "isVisible": "{{appState.stage === 1}}",
+                    "children": [
+                      {
+                        "type": "TEXT_WIDGET",
+                        "widgetName": "StepTitle",
+                        "text": "Describe Your Video Idea",
+                        "fontSize": "1.5rem",
+                        "fontWeight": "bold",
+                        "textColor": "#ffffff"
+                      },
+                      {
+                        "type": "INPUT_WIDGET",
+                        "widgetName": "VideoDescription",
+                        "inputType": "TEXT",
+                        "placeholderText": "e.g., How to make perfect coffee at home",
+                        "label": "",
+                        "isRequired": true,
+                        "defaultValue": ""
+                      },
+                      {
+                        "type": "RADIO_GROUP_WIDGET",
+                        "widgetName": "ToneSelector",
+                        "label": "Tone",
+                        "options": [
+                          { "label": "Professional", "value": "professional" },
+                          { "label": "Educational", "value": "educational" },
+                          { "label": "Fun", "value": "fun" },
+                          { "label": "Inspiring", "value": "inspiring" }
+                        ],
+                        "defaultValue": "educational"
+                      },
+                      {
+                        "type": "CHECKBOX_GROUP_WIDGET",
+                        "widgetName": "PlatformSelector",
+                        "label": "Platforms",
+                        "options": [
+                          { "label": "TikTok", "value": "tiktok" },
+                          { "label": "Instagram", "value": "instagram" },
+                          { "label": "YouTube", "value": "youtube" }
+                        ],
+                        "defaultValue": ["youtube"]
+                      },
+                      {
+                        "type": "SLIDER_WIDGET",
+                        "widgetName": "DurationSlider",
+                        "label": "Duration (seconds)",
+                        "min": 10,
+                        "max": 120,
+                        "defaultValue": 30,
+                        "step": 10
+                      },
+                      {
+                        "type": "BUTTON_WIDGET",
+                        "widgetName": "GenerateScriptButton",
+                        "text": "Generate Smart Script",
+                        "buttonColor": "#7C3AED",
+                        "onClick": "{{generateScript.trigger()}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "CONTAINER_WIDGET",
+                    "widgetName": "ScriptReviewContainer",
+                    "isVisible": "{{appState.stage === 2}}",
+                    "children": [
+                      {
+                        "type": "TEXT_WIDGET",
+                        "widgetName": "ScriptTitle",
+                        "text": "Your AI-Generated Script",
+                        "fontSize": "1.5rem",
+                        "fontWeight": "bold",
+                        "textColor": "#ffffff"
+                      },
+                      {
+                        "type": "TEXT_WIDGET",
+                        "widgetName": "ScriptHook",
+                        "text": "{{appState.script.hook}}",
+                        "fontSize": "1.2rem",
+                        "fontWeight": "600",
+                        "textColor": "#A78BFA"
+                      },
+                      {
+                        "type": "LIST_WIDGET",
+                        "widgetName": "ScriptMainPoints",
+                        "items": "{{appState.script.mainPoints}}",
+                        "template": {
+                          "type": "TEXT_WIDGET",
+                          "text": "{{currentItem}}"
+                        }
+                      },
+                      {
+                        "type": "TEXT_WIDGET",
+                        "widgetName": "ScriptCTA",
+                        "text": "{{appState.script.callToAction}}",
+                        "fontWeight": "600",
+                        "textColor": "#F59E0B"
+                      },
+                      {
+                        "type": "BUTTON_GROUP_WIDGET",
+                        "widgetName": "ScriptActions",
+                        "buttons": [
+                          {
+                            "text": "Edit Script",
+                            "onClick": "{{setAppState({ editMode: true })}}"
+                          },
+                          {
+                            "text": "Choose Voice",
+                            "buttonColor": "#7C3AED",
+                            "onClick": "{{setAppState({ stage: 3 })}}"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "CONTAINER_WIDGET",
+                    "widgetName": "VoiceSelectionContainer",
+                    "isVisible": "{{appState.stage === 3}}",
+                    "backgroundColor": "rgb(31, 41, 55)",
+                    "children": [
+                      {
+                        "type": "TEXT_WIDGET",
+                        "widgetName": "VoiceTitle",
+                        "text": "🎤 Select Your AI Voice",
+                        "fontSize": "1.125rem",
+                        "fontWeight": "bold",
+                        "textColor": "#ffffff",
+                        "textAlign": "CENTER"
+                      },
+                      {
+                        "type": "INPUT_WIDGET",
+                        "widgetName": "VoiceSearch",
+                        "inputType": "TEXT",
+                        "placeholderText": "Search voices by name, style, or description...",
+                        "fontSize": "0.75rem"
+                      },
+                      {
+                        "type": "BUTTON_GROUP_WIDGET",
+                        "widgetName": "ProviderFilters",
+                        "buttons": [
+                          {
+                            "text": "All Providers (43)",
+                            "onClick": "{{setAppState({ activeProvider: 'all' })}}",
+                            "buttonColor": "{{appState.activeProvider === 'all' ? '#7C3AED' : '#374151'}}"
+                          },
+                          {
+                            "text": "🤖 OpenAI (11)",
+                            "onClick": "{{setAppState({ activeProvider: 'openai' })}}",
+                            "buttonColor": "{{appState.activeProvider === 'openai' ? '#7C3AED' : '#374151'}}"
+                          },
+                          {
+                            "text": "🎙️ ElevenLabs (24)",
+                            "onClick": "{{setAppState({ activeProvider: 'elevenlabs' })}}",
+                            "buttonColor": "{{appState.activeProvider === 'elevenlabs' ? '#7C3AED' : '#374151'}}"
+                          },
+                          {
+                            "text": "🌐 Google AI (8)",
+                            "onClick": "{{setAppState({ activeProvider: 'google' })}}",
+                            "buttonColor": "{{appState.activeProvider === 'google' ? '#7C3AED' : '#374151'}}"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "LIST_WIDGET",
+                        "widgetName": "VoiceList",
+                        "items": "{{filteredVoices.data}}",
+                        "template": {
+                          "type": "CONTAINER_WIDGET",
+                          "backgroundColor": "rgb(31, 41, 55)",
+                          "border": "1px solid rgba(255,255,255,0.1)",
+                          "borderRadius": "0.25rem",
+                          "padding": "0.5rem",
+                          "children": [
+                            {
+                              "type": "TEXT_WIDGET",
+                              "text": "{{currentItem.name}}",
+                              "fontSize": "0.875rem",
+                              "fontWeight": "600",
+                              "textColor": "#ffffff"
+                            },
+                            {
+                              "type": "TEXT_WIDGET",
+                              "text": "{{currentItem.style}} • {{currentItem.description}}",
+                              "fontSize": "0.75rem",
+                              "textColor": "#9CA3AF"
+                            },
+                            {
+                              "type": "BUTTON_WIDGET",
+                              "text": "Preview",
+                              "fontSize": "0.75rem",
+                              "buttonColor": "#7C3AED",
+                              "onClick": "{{previewVoice.trigger({voiceId: currentItem.id})}}"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "type": "BUTTON_GROUP_WIDGET",
+                        "widgetName": "VoiceActions",
+                        "buttons": [
+                          {
+                            "text": "Back to Script",
+                            "onClick": "{{setAppState({ stage: 2 })}}",
+                            "buttonColor": "#374151"
+                          },
+                          {
+                            "text": "Generate Voice",
+                            "onClick": "{{generateVoice.trigger()}}",
+                            "buttonColor": "#7C3AED",
+                            "isDisabled": "{{!appState.selectedVoice}}"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "CONTAINER_WIDGET",
+                    "widgetName": "VideoContainer",
+                    "isVisible": "{{appState.stage === 4}}",
+                    "children": [
+                      {
+                        "type": "VIDEO_WIDGET",
+                        "widgetName": "GeneratedVideo",
+                        "url": "{{appState.videoUrl}}"
+                      },
+                      {
+                        "type": "BUTTON_GROUP_WIDGET",
+                        "widgetName": "VideoActions",
+                        "buttons": [
+                          {
+                            "text": "Download Video",
+                            "onClick": "{{downloadVideo.trigger()}}",
+                            "buttonColor": "#10B981"
+                          },
+                          {
+                            "text": "Create New Video",
+                            "onClick": "{{resetApp.trigger()}}",
+                            "buttonColor": "#7C3AED"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "queries": [
+      {
+        "name": "generateScript",
+        "type": "API",
+        "method": "POST",
+        "url": "{{appConfig.API_URL}}/api/generate-script",
+        "body": {
+          "description": "{{VideoDescription.text}}",
+          "tone": "{{ToneSelector.selectedOptionValue}}",
+          "platforms": "{{PlatformSelector.selectedOptionValues}}",
+          "duration": "{{DurationSlider.value}}"
+        },
+        "onSuccess": [
+          "{{setAppState({ script: generateScript.data, stage: 2 })}}"
+        ]
+      },
+      {
+        "name": "getVoices",
+        "type": "API",
+        "method": "GET",
+        "url": "{{appConfig.API_URL}}/api/voices",
+        "runOnPageLoad": true
+      },
+      {
+        "name": "filteredVoices",
+        "type": "JS",
+        "code": "return getVoices.data.voices.filter(voice => {\n  const matchesProvider = appState.activeProvider === 'all' || voice.provider.toLowerCase() === appState.activeProvider;\n  const matchesSearch = !VoiceSearch.text || voice.name.toLowerCase().includes(VoiceSearch.text.toLowerCase());\n  return matchesProvider && matchesSearch;\n});"
+      },
+      {
+        "name": "previewVoice",
+        "type": "API",
+        "method": "POST",
+        "url": "{{appConfig.API_URL}}/api/voice-preview",
+        "body": {
+          "voiceId": "{{this.params.voiceId}}",
+          "demoText": "Testing the new compact UI with Google AI Studio voices"
+        }
+      },
+      {
+        "name": "generateVoice",
+        "type": "API",
+        "method": "POST",
+        "url": "{{appConfig.API_URL}}/api/generate-voice",
+        "body": {
+          "scriptId": "{{appState.script.id}}",
+          "voiceId": "{{appState.selectedVoice.id}}",
+          "text": "{{appState.script.hook + ' ' + appState.script.mainPoints.join(' ') + ' ' + appState.script.callToAction}}"
+        },
+        "onSuccess": [
+          "{{setAppState({ voice: generateVoice.data, stage: 4 })}}"
+        ]
+      },
+      {
+        "name": "setAppState",
+        "type": "JS",
+        "code": "appsmith.store.appState = { ...appsmith.store.appState, ...this.params };"
+      },
+      {
+        "name": "resetApp",
+        "type": "JS",
+        "code": "appsmith.store.appState = { stage: 0, activeProvider: 'all' };\nVideoDescription.setValue('');\nToneSelector.setValue('educational');\nPlatformSelector.setValue(['youtube']);\nDurationSlider.setValue(30);"
+      }
+    ],
+    "customCSS": ":root {\n  font-size: 60%;\n}\n\n/* Compact UI Implementation */\nbody {\n  font-size: 0.875rem;\n}\n\nh1 { font-size: 1.5rem; }\nh2 { font-size: 1.25rem; }\nh3 { font-size: 1.125rem; }\nh4 { font-size: 1rem; }\n\ninput, textarea, select {\n  padding: 0.25rem 0.5rem;\n  font-size: 0.75rem;\n}\n\nbutton {\n  padding: 0.25rem 0.75rem;\n  font-size: 0.75rem;\n}\n\n/* Dark theme */\n.main-container {\n  background: #111827;\n  color: #ffffff;\n}\n\n/* Custom scrollbar */\n::-webkit-scrollbar {\n  width: 8px;\n}\n\n::-webkit-scrollbar-track {\n  background: #111827;\n}\n\n::-webkit-scrollbar-thumb {\n  background: #374151;\n  border-radius: 4px;\n}",
+    "config": {
+      "appConfig": {
+        "API_URL": "http://localhost:4444",
+        "FRONTEND_URL": "http://localhost:4445"
+      },
+      "initialState": {
+        "appState": {
+          "stage": 0,
+          "activeProvider": "all",
+          "selectedVoice": null,
+          "script": null,
+          "voice": null,
+          "videoUrl": null
+        }
+      }
+    },
+    "googleVoices": [
+      {
+        "id": "google_zephyr",
+        "name": "Zephyr",
+        "provider": "Google",
+        "style": "Bright",
+        "description": "Bright and cheerful voice"
+      },
+      {
+        "id": "google_puck",
+        "name": "Puck",
+        "provider": "Google",
+        "style": "Upbeat",
+        "description": "Upbeat and energetic voice"
+      },
+      {
+        "id": "google_isla",
+        "name": "Isla",
+        "provider": "Google",
+        "style": "Expressive",
+        "description": "Expressive and dynamic voice"
+      },
+      {
+        "id": "google_echo",
+        "name": "Echo",
+        "provider": "Google",
+        "style": "Professional",
+        "description": "Professional and clear voice"
+      },
+      {
+        "id": "google_orbit",
+        "name": "Orbit",
+        "provider": "Google",
+        "style": "Futuristic",
+        "description": "Modern futuristic voice"
+      },
+      {
+        "id": "google_nova",
+        "name": "Nova (Google)",
+        "provider": "Google",
+        "style": "Warm",
+        "description": "Warm and friendly voice"
+      },
+      {
+        "id": "google_sage",
+        "name": "Sage",
+        "provider": "Google",
+        "style": "Wise",
+        "description": "Wise and thoughtful voice"
+      },
+      {
+        "id": "google_luna",
+        "name": "Luna",
+        "provider": "Google",
+        "style": "Dreamy",
+        "description": "Soft and dreamy voice"
+      }
+    ]
+  }
+}

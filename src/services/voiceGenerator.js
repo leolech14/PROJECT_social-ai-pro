@@ -248,7 +248,7 @@ class VoiceGenerator {
         
         const voiceName = voiceMap[voiceId] || 'Zephyr'
         
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${googleKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${googleKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

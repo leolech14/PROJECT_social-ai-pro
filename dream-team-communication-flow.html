@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dream Team Communication Flow - Log Bus Architecture</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            overflow: hidden;
+        }
+
+        #container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            grid-template-rows: 1fr;
+            height: 100vh;
+            gap: 1px;
+            background: #333;
+        }
+
+        #visualization {
+            background: #0a0a0a;
+            position: relative;
+        }
+
+        #sidebar {
+            background: #1a1a1a;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            max-width: 300px;
+        }
+
+        h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #fff;
+        }
+
+        button {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 6px 12px;
+            margin: 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #3a3a3a;
+            border-color: #666;
+        }
+
+        button.active {
+            background: #4a4a4a;
+            border-color: #888;
+        }
+
+        .log-bus {
+            fill: #2a2a2a;
+            stroke: #666;
+            stroke-width: 2px;
+        }
+
+        .agent-node {
+            cursor: pointer;
+        }
+
+        .agent-rect {
+            stroke-width: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .agent-node:hover .agent-rect {
+            stroke-width: 3px;
+            filter: brightness(1.2);
+        }
+
+        .message {
+            opacity: 0;
+            animation: message-flow 2s ease-in-out;
+        }
+
+        @keyframes message-flow {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        .message-path {
+            fill: none;
+            stroke-width: 2;
+            stroke-dasharray: 5, 5;
+        }
+
+        .message-circle {
+            r: 4;
+        }
+
+        .log-entry {
+            padding: 5px;
+            margin: 2px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+            animation: fadeIn 0.3s ease;
+            word-wrap: break-word;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .log-entry.INFO { background: #1e3a2a; border-left: 3px solid #10b981; }
+        .log-entry.CMD { background: #2a1e3a; border-left: 3px solid #8b5cf6; }
+        .log-entry.TASK { background: #3a2a1e; border-left: 3px solid #f59e0b; }
+
+        .model-opus { fill: #8b5cf6; }
+        .model-sonnet { fill: #3b82f6; }
+        .model-haiku { fill: #10b981; }
+
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        #log-stream {
+            margin-top: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #444;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4ade80;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .bash-tool {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            max-width: 400px;
+        }
+
+        .bash-command {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            color: #4ade80;
+        }
+
+        .flow-diagram {
+            margin-top: 20px;
+        }
+
+        .json-example {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 11px;
+            overflow-x: auto;
+        }
+
+        pre {
+            margin: 0;
+            color: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="visualization">
+            <div class="controls">
+                <h3>Communication Flow Controls</h3>
+                <button onclick="simulateSequential()">Sequential Pattern</button>
+                <button onclick="simulateParallel()">Parallel Pattern</button>
+                <button onclick="simulateReview()">Review Loop</button>
+                <button onclick="simulateDynamic()">Dynamic Router</button>
+                <hr style="border-color: #444; margin: 10px 0;">
+                <button onclick="toggleAnimation()">Toggle Animation</button>
+                <button onclick="clearMessages()">Clear Messages</button>
+                <button onclick="showBashExample()">Show Bash Tools</button>
+            </div>
+
+            <div class="legend">
+                <h4 style="margin: 0 0 10px 0;">Communication Architecture</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2a2a2a;"></div>
+                    <span>Log Bus (agents.ndjson)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color model-opus"></div>
+                    <span>Opus Agent</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color model-sonnet"></div>
+                    <span>Sonnet Agent</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color model-haiku"></div>
+                    <span>Haiku Agent</span>
+                </div>
+            </div>
+
+            <div class="bash-tool" id="bash-example" style="display: none;">
+                <h4>Bash Tool Examples</h4>
+                <div class="bash-command">agent-monitor --follow --agent orchestrator-prime</div>
+                <div class="bash-command">agent-orchestrate parallel "implement dashboard"</div>
+                <div class="bash-command">agent-communicate --send ui-specialist "render component"</div>
+                <div class="bash-command">agent-health --check-all</div>
+                <p style="margin-top: 10px; font-size: 11px; color: #888;">
+                    All tools use atomic writes with flock for thread safety
+                </p>
+            </div>
+        </div>
+        
+        <div id="sidebar">
+            <h2>Log Bus Monitor</h2>
+            <div class="json-example">
+                <h4>Message Format (JSON-Lines)</h4>
+                <pre>{
+  "ts": "2025-08-03T12:34:56Z",
+  "agent": "ui-specialist",
+  "level": "INFO",
+  "topic": "task",
+  "payload": "Component created",
+  "task_id": "task_123",
+  "parent_agent": "development-lead",
+  "model": "sonnet"
+}</pre>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="message-count">0</div>
+                    <div class="stat-label">Messages</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="active-agents">0</div>
+                    <div class="stat-label">Active Agents</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="task-count">0</div>
+                    <div class="stat-label">Tasks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="cmd-count">0</div>
+                    <div class="stat-label">Commands</div>
+                </div>
+            </div>
+
+            <div id="log-stream">
+                <h3>Real-time Log Stream</h3>
+                <div id="log-entries"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Agent configuration with communication patterns
+        const agents = [
+            {
+                id: "orchestrator-prime",
+                name: "Orchestrator Prime",
+                model: "opus",
+                x: 400, y: 100,
+                subscribes: ["task-complete", "error"],
+                publishes: ["task-assignment", "pattern-selection"]
+            },
+            {
+                id: "development-lead",
+                name: "Development Lead",
+                model: "sonnet",
+                x: 200, y: 200,
+                subscribes: ["task-assignment", "review-complete"],
+                publishes: ["dev-task", "code-ready"]
+            },
+            {
+                id: "operations-lead",
+                name: "Operations Lead",
+                model: "sonnet",
+                x: 400, y: 200,
+                subscribes: ["task-assignment", "alert"],
+                publishes: ["deployment", "health-check"]
+            },
+            {
+                id: "quality-lead",
+                name: "Quality Lead",
+                model: "sonnet",
+                x: 600, y: 200,
+                subscribes: ["code-ready", "review-request"],
+                publishes: ["review-complete", "test-results"]
+            },
+            {
+                id: "ui-specialist",
+                name: "UI Specialist",
+                model: "sonnet",
+                x: 100, y: 300,
+                subscribes: ["dev-task", "design-update"],
+                publishes: ["component-ready", "ui-update"]
+            },
+            {
+                id: "backend-specialist",
+                name: "Backend Specialist",
+                model: "sonnet",
+                x: 250, y: 300,
+                subscribes: ["dev-task", "api-spec"],
+                publishes: ["api-ready", "service-update"]
+            },
+            {
+                id: "database-specialist",
+                name: "Database Specialist",
+                model: "sonnet",
+                x: 400, y: 300,
+                subscribes: ["dev-task", "performance-issue"],
+                publishes: ["schema-update", "query-optimized"]
+            },
+            {
+                id: "test-engineer",
+                name: "Test Engineer",
+                model: "sonnet",
+                x: 550, y: 300,
+                subscribes: ["code-ready", "test-request"],
+                publishes: ["test-results", "coverage-report"]
+            },
+            {
+                id: "guardian-enforcer",
+                name: "Guardian Enforcer",
+                model: "opus",
+                x: 700, y: 300,
+                subscribes: ["all"],
+                publishes: ["violation", "compliance-check"]
+            }
+        ];
+
+        // Set up SVG
+        const width = document.getElementById('visualization').clientWidth;
+        const height = document.getElementById('visualization').clientHeight;
+
+        const svg = d3.select("#visualization")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const g = svg.append("g");
+
+        // Create log bus (central communication hub)
+        const logBusX = width / 2;
+        const logBusY = height / 2 + 50;
+        const logBusWidth = 200;
+        const logBusHeight = 60;
+
+        g.append("rect")
+            .attr("class", "log-bus")
+            .attr("x", logBusX - logBusWidth/2)
+            .attr("y", logBusY - logBusHeight/2)
+            .attr("width", logBusWidth)
+            .attr("height", logBusHeight)
+            .attr("rx", 10);
+
+        g.append("text")
+            .attr("x", logBusX)
+            .attr("y", logBusY)
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "middle")
+            .style("fill", "#fff")
+            .style("font-size", "14px")
+            .text("Log Bus (agents.ndjson)");
+
+        // Create agent nodes
+        const agentGroups = g.selectAll(".agent-node")
+            .data(agents)
+            .enter().append("g")
+            .attr("class", "agent-node")
+            .attr("transform", d => `translate(${d.x},${d.y})`);
+
+        agentGroups.append("rect")
+            .attr("class", "agent-rect")
+            .attr("x", -60)
+            .attr("y", -25)
+            .attr("width", 120)
+            .attr("height", 50)
+            .attr("rx", 5)
+            .attr("fill", d => {
+                const colors = {opus: "#8b5cf6", sonnet: "#3b82f6", haiku: "#10b981"};
+                return colors[d.model];
+            })
+            .attr("stroke", "#fff");
+
+        agentGroups.append("text")
+            .attr("text-anchor", "middle")
+            .attr("y", -5)
+            .style("fill", "#fff")
+            .style("font-size", "12px")
+            .text(d => d.name);
+
+        agentGroups.append("text")
+            .attr("text-anchor", "middle")
+            .attr("y", 10)
+            .style("fill", "#ccc")
+            .style("font-size", "10px")
+            .text(d => d.model.toUpperCase());
+
+        // Create connections to log bus
+        const connections = g.selectAll(".connection")
+            .data(agents)
+            .enter().append("line")
+            .attr("class", "connection")
+            .attr("x1", d => d.x)
+            .attr("y1", d => d.y + 25)
+            .attr("x2", logBusX)
+            .attr("y2", logBusY - logBusHeight/2)
+            .attr("stroke", "#444")
+            .attr("stroke-width", 1)
+            .attr("stroke-dasharray", "2,2");
+
+        // Message animation
+        let animationActive = true;
+        let messageCount = 0;
+        let activeAgentCount = 0;
+        let taskCount = 0;
+        let cmdCount = 0;
+
+        function animateMessage(fromAgent, toAgent, topic, payload) {
+            if (!animationActive) return;
+
+            const from = agents.find(a => a.id === fromAgent);
+            const to = agents.find(a => a.id === toAgent);
+            
+            if (!from || !to) return;
+
+            // Create path through log bus
+            const path = [
+                {x: from.x, y: from.y + 25},
+                {x: logBusX, y: logBusY},
+                {x: to.x, y: to.y - 25}
+            ];
+
+            const lineFunction = d3.line()
+                .x(d => d.x)
+                .y(d => d.y)
+                .curve(d3.curveCardinal);
+
+            const messageGroup = g.append("g")
+                .attr("class", "message");
+
+            messageGroup.append("path")
+                .attr("class", "message-path")
+                .attr("d", lineFunction(path))
+                .attr("stroke", topic === "cmd" ? "#8b5cf6" : "#f59e0b");
+
+            const circle = messageGroup.append("circle")
+                .attr("class", "message-circle")
+                .attr("fill", topic === "cmd" ? "#8b5cf6" : "#f59e0b");
+
+            // Animate along path
+            const totalLength = messageGroup.select("path").node().getTotalLength();
+            
+            circle
+                .attr("r", 4)
+                .transition()
+                .duration(2000)
+                .attrTween("transform", function() {
+                    return function(t) {
+                        const point = messageGroup.select("path").node().getPointAtLength(t * totalLength);
+                        return `translate(${point.x},${point.y})`;
+                    };
+                });
+
+            // Add log entry
+            addLogEntry(topic === "cmd" ? "CMD" : "TASK", fromAgent, payload);
+
+            // Remove after animation
+            setTimeout(() => messageGroup.remove(), 2000);
+
+            // Update stats
+            messageCount++;
+            if (topic === "task") taskCount++;
+            if (topic === "cmd") cmdCount++;
+            updateStats();
+        }
+
+        function addLogEntry(level, agent, message) {
+            const logEntries = document.getElementById('log-entries');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${level}`;
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            entry.innerHTML = `<strong>${timestamp} [${agent}]</strong> ${message}`;
+            
+            logEntries.insertBefore(entry, logEntries.firstChild);
+            
+            // Keep only last 20 entries
+            while (logEntries.children.length > 20) {
+                logEntries.removeChild(logEntries.lastChild);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('message-count').textContent = messageCount;
+            document.getElementById('active-agents').textContent = activeAgentCount;
+            document.getElementById('task-count').textContent = taskCount;
+            document.getElementById('cmd-count').textContent = cmdCount;
+        }
+
+        // Simulation functions
+        function simulateSequential() {
+            activeAgentCount = 4;
+            updateStats();
+            
+            animateMessage("orchestrator-prime", "development-lead", "task", "Plan implementation");
+            
+            setTimeout(() => {
+                animateMessage("development-lead", "ui-specialist", "task", "Create components");
+            }, 500);
+            
+            setTimeout(() => {
+                animateMessage("ui-specialist", "development-lead", "task", "Components ready");
+            }, 1500);
+            
+            setTimeout(() => {
+                animateMessage("development-lead", "backend-specialist", "task", "Build APIs");
+            }, 2000);
+            
+            setTimeout(() => {
+                animateMessage("backend-specialist", "development-lead", "task", "APIs complete");
+            }, 3000);
+            
+            setTimeout(() => {
+                animateMessage("development-lead", "quality-lead", "task", "Review implementation");
+            }, 3500);
+            
+            setTimeout(() => {
+                animateMessage("quality-lead", "orchestrator-prime", "task", "Approved for deployment");
+                activeAgentCount = 0;
+                updateStats();
+            }, 4500);
+        }
+
+        function simulateParallel() {
+            activeAgentCount = 5;
+            updateStats();
+            
+            animateMessage("orchestrator-prime", "development-lead", "task", "Execute parallel tasks");
+            
+            setTimeout(() => {
+                animateMessage("development-lead", "ui-specialist", "task", "Frontend work");
+                animateMessage("development-lead", "backend-specialist", "task", "Backend work");
+                animateMessage("development-lead", "database-specialist", "task", "Database work");
+            }, 500);
+            
+            setTimeout(() => {
+                animateMessage("ui-specialist", "development-lead", "task", "Frontend complete");
+                animateMessage("backend-specialist", "development-lead", "task", "Backend complete");
+                animateMessage("database-specialist", "development-lead", "task", "Database complete");
+            }, 2000);
+            
+            setTimeout(() => {
+                animateMessage("development-lead", "orchestrator-prime", "task", "All parallel tasks complete");
+                activeAgentCount = 0;
+                updateStats();
+            }, 2500);
+        }
+
+        function simulateReview() {
+            activeAgentCount = 3;
+            updateStats();
+            
+            animateMessage("orchestrator-prime", "development-lead", "task", "Implement with review");
+            
+            setTimeout(() => {
+                animateMessage("development-lead", "quality-lead", "task", "Review iteration 1");
+            }, 1000);
+            
+            setTimeout(() => {
+                animateMessage("quality-lead", "development-lead", "task", "Issues found");
+            }, 2000);
+            
+            setTimeout(() => {
+                animateMessage("development-lead", "quality-lead", "task", "Review iteration 2");
+            }, 3000);
+            
+            setTimeout(() => {
+                animateMessage("quality-lead", "orchestrator-prime", "task", "Review passed");
+                activeAgentCount = 0;
+                updateStats();
+            }, 4000);
+        }
+
+        function simulateDynamic() {
+            activeAgentCount = 2;
+            updateStats();
+            
+            animateMessage("orchestrator-prime", "orchestrator-prime", "cmd", "Analyzing task complexity");
+            
+            setTimeout(() => {
+                animateMessage("orchestrator-prime", "development-lead", "cmd", "Selected pattern: parallel");
+                simulateParallel();
+            }, 1000);
+        }
+
+        function toggleAnimation() {
+            animationActive = !animationActive;
+        }
+
+        function clearMessages() {
+            document.getElementById('log-entries').innerHTML = '';
+            messageCount = 0;
+            taskCount = 0;
+            cmdCount = 0;
+            updateStats();
+        }
+
+        function showBashExample() {
+            const bashExample = document.getElementById('bash-example');
+            bashExample.style.display = bashExample.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Guardian monitoring
+        setInterval(() => {
+            if (Math.random() > 0.8) {
+                animateMessage("guardian-enforcer", "orchestrator-prime", "cmd", "Compliance check passed");
+            }
+        }, 10000);
+
+        // Initial message
+        addLogEntry("INFO", "system", "Dream Team Communication System initialized");
+        addLogEntry("INFO", "log-bus", "Atomic writes enabled with flock");
+    </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "appName": "Social AI Pro",
+  "version": "1.0.0",
+  "api": {
+    "baseUrl": "http://localhost:4444",
+    "endpoints": {
+      "voices": "/api/voices",
+      "generateScript": "/api/generate-script",
+      "voicePreview": "/api/voice-preview",
+      "generateVoice": "/api/generate-voice",
+      "retoolHealth": "/api/retool/health",
+      "appData": "/api/retool/app-data"
+    }
+  },
+  "ui": {
+    "compactMode": true,
+    "fontSize": "60%",
+    "theme": "dark",
+    "colors": {
+      "primary": "#7C3AED",
+      "secondary": "#EC4899",
+      "background": "#111827",
+      "surface": "#1F2937",
+      "text": "#FFFFFF",
+      "textSecondary": "#9CA3AF"
+    }
+  },
+  "features": {
+    "voiceProviders": ["Google", "OpenAI", "ElevenLabs"],
+    "totalVoices": 43,
+    "stages": ["Hero", "Input", "Script", "Voice", "Output"]
+  }
+}

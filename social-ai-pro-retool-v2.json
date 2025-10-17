@@ -1,0 +1,502 @@
+{
+  "version": "2.118.0",
+  "pageUuid": "3d5a0a52-123a-11ef-8080-abc123def456",
+  "appTemplate": {
+    "rootScreen": null,
+    "version": "2.118.0",
+    "markdownLinkBehavior": "auto",
+    "experimentalDataTabEnabled": true,
+    "responsiveLayoutDisabled": false,
+    "pageUuid": "3d5a0a52-123a-11ef-8080-abc123def456"
+  },
+  "page": {
+    "id": "social-ai-pro",
+    "type": "app",
+    "slug": "social-ai-pro",
+    "customShortcuts": [],
+    "canvas": [
+      {
+        "key": "container1",
+        "type": "widget",
+        "widgetType": "container",
+        "props": {
+          "backgroundColor": "rgb(17, 24, 39)",
+          "borderRadius": "8px",
+          "padding": "24px",
+          "gap": "16px",
+          "layout": {
+            "type": "stack",
+            "direction": "vertical",
+            "justify": "start",
+            "align": "stretch",
+            "wrap": "nowrap"
+          }
+        },
+        "children": ["text1", "text2", "button1", "container2", "container3", "container4", "container5"]
+      },
+      {
+        "key": "text1",
+        "type": "widget",
+        "widgetType": "text",
+        "props": {
+          "text": "Social Media Science",
+          "fontSize": "32px",
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "textAlign": "center",
+          "hidden": "{{ state.stage !== 0 }}"
+        }
+      },
+      {
+        "key": "text2",
+        "type": "widget",
+        "widgetType": "text",
+        "props": {
+          "text": "Transform user inputs into viral-worthy video scripts using research-backed principles and AI intelligence",
+          "fontSize": "16px",
+          "color": "#9CA3AF",
+          "textAlign": "center",
+          "hidden": "{{ state.stage !== 0 }}"
+        }
+      },
+      {
+        "key": "button1",
+        "type": "widget",
+        "widgetType": "button",
+        "props": {
+          "text": "Start Creating",
+          "style": {
+            "background": "#7C3AED"
+          },
+          "events": {
+            "click": "setStage.trigger({ stage: 1 })"
+          },
+          "hidden": "{{ state.stage !== 0 }}"
+        }
+      },
+      {
+        "key": "container2",
+        "type": "widget",
+        "widgetType": "container",
+        "props": {
+          "hidden": "{{ state.stage !== 1 }}",
+          "backgroundColor": "transparent"
+        },
+        "children": ["text3", "textInput1", "select1", "multiselect1", "numberInput1", "button2"]
+      },
+      {
+        "key": "text3",
+        "type": "widget",
+        "widgetType": "text",
+        "props": {
+          "text": "Describe Your Video Idea",
+          "fontSize": "24px",
+          "fontWeight": "bold",
+          "color": "#ffffff"
+        }
+      },
+      {
+        "key": "textInput1",
+        "type": "widget",
+        "widgetType": "textInput",
+        "props": {
+          "label": "",
+          "placeholder": "e.g., How to make perfect coffee at home",
+          "value": "{{ state.description }}",
+          "events": {
+            "change": "updateState.trigger({ description: textInput1.value })"
+          }
+        }
+      },
+      {
+        "key": "select1",
+        "type": "widget",
+        "widgetType": "select",
+        "props": {
+          "label": "Tone",
+          "data": ["Professional", "Educational", "Fun", "Inspiring"],
+          "value": "{{ state.tone }}",
+          "events": {
+            "change": "updateState.trigger({ tone: select1.value })"
+          }
+        }
+      },
+      {
+        "key": "multiselect1",
+        "type": "widget",
+        "widgetType": "multiselect",
+        "props": {
+          "label": "Platforms",
+          "data": ["TikTok", "Instagram", "YouTube"],
+          "value": "{{ state.platforms }}",
+          "events": {
+            "change": "updateState.trigger({ platforms: multiselect1.value })"
+          }
+        }
+      },
+      {
+        "key": "numberInput1",
+        "type": "widget",
+        "widgetType": "numberInput",
+        "props": {
+          "label": "Duration (seconds)",
+          "value": "{{ state.duration }}",
+          "min": 10,
+          "max": 120,
+          "step": 10,
+          "events": {
+            "change": "updateState.trigger({ duration: numberInput1.value })"
+          }
+        }
+      },
+      {
+        "key": "button2",
+        "type": "widget",
+        "widgetType": "button",
+        "props": {
+          "text": "Generate Smart Script",
+          "style": {
+            "background": "#7C3AED"
+          },
+          "events": {
+            "click": "generateScript.trigger()"
+          }
+        }
+      },
+      {
+        "key": "container3",
+        "type": "widget",
+        "widgetType": "container",
+        "props": {
+          "hidden": "{{ state.stage !== 2 }}",
+          "backgroundColor": "rgb(31, 41, 55)",
+          "padding": "16px",
+          "borderRadius": "8px"
+        },
+        "children": ["text4", "text5", "text6", "text7", "buttonGroup1"]
+      },
+      {
+        "key": "text4",
+        "type": "widget",
+        "widgetType": "text",
+        "props": {
+          "text": "Your AI-Generated Script",
+          "fontSize": "24px",
+          "fontWeight": "bold",
+          "color": "#ffffff"
+        }
+      },
+      {
+        "key": "text5",
+        "type": "widget",
+        "widgetType": "text",
+        "props": {
+          "text": "{{ state.script.hook }}",
+          "fontSize": "18px",
+          "fontWeight": "600",
+          "color": "#A78BFA"
+        }
+      },
+      {
+        "key": "text6",
+        "type": "widget",
+        "widgetType": "text",
+        "props": {
+          "text": "{{ state.script.mainPoints.join('\\n') }}",
+          "fontSize": "14px",
+          "color": "#ffffff"
+        }
+      },
+      {
+        "key": "text7",
+        "type": "widget",
+        "widgetType": "text",
+        "props": {
+          "text": "{{ state.script.callToAction }}",
+          "fontSize": "16px",
+          "fontWeight": "600",
+          "color": "#F59E0B"
+        }
+      },
+      {
+        "key": "buttonGroup1",
+        "type": "widget",
+        "widgetType": "container",
+        "props": {
+          "layout": {
+            "type": "stack",
+            "direction": "horizontal",
+            "gap": "8px"
+          }
+        },
+        "children": ["button3", "button4"]
+      },
+      {
+        "key": "button3",
+        "type": "widget",
+        "widgetType": "button",
+        "props": {
+          "text": "Edit Script",
+          "style": {
+            "background": "#374151"
+          }
+        }
+      },
+      {
+        "key": "button4",
+        "type": "widget",
+        "widgetType": "button",
+        "props": {
+          "text": "Choose Voice",
+          "style": {
+            "background": "#7C3AED"
+          },
+          "events": {
+            "click": "setStage.trigger({ stage: 3 })"
+          }
+        }
+      },
+      {
+        "key": "container4",
+        "type": "widget",
+        "widgetType": "container",
+        "props": {
+          "hidden": "{{ state.stage !== 3 }}",
+          "backgroundColor": "rgb(31, 41, 55)",
+          "padding": "12px",
+          "borderRadius": "8px"
+        },
+        "children": ["text8", "textInput2", "segmentedControl1", "table1", "buttonGroup2"]
+      },
+      {
+        "key": "text8",
+        "type": "widget",
+        "widgetType": "text",
+        "props": {
+          "text": "🎤 Select Your AI Voice",
+          "fontSize": "18px",
+          "fontWeight": "bold",
+          "color": "#ffffff",
+          "textAlign": "center"
+        }
+      },
+      {
+        "key": "textInput2",
+        "type": "widget",
+        "widgetType": "textInput",
+        "props": {
+          "placeholder": "Search voices by name, style, or description...",
+          "value": "{{ state.voiceSearch }}",
+          "events": {
+            "change": "updateState.trigger({ voiceSearch: textInput2.value })"
+          }
+        }
+      },
+      {
+        "key": "segmentedControl1",
+        "type": "widget",
+        "widgetType": "segmentedControl",
+        "props": {
+          "items": [
+            { "label": "All Providers (43)", "value": "all" },
+            { "label": "🤖 OpenAI (11)", "value": "openai" },
+            { "label": "🎙️ ElevenLabs (24)", "value": "elevenlabs" },
+            { "label": "🌐 Google AI (8)", "value": "google" }
+          ],
+          "value": "{{ state.activeProvider }}",
+          "events": {
+            "change": "updateState.trigger({ activeProvider: segmentedControl1.value })"
+          }
+        }
+      },
+      {
+        "key": "table1",
+        "type": "widget",
+        "widgetType": "table",
+        "props": {
+          "data": "{{ getVoices.data }}",
+          "columns": [
+            {
+              "key": "name",
+              "label": "Voice Name",
+              "type": "text"
+            },
+            {
+              "key": "style",
+              "label": "Style",
+              "type": "text"
+            },
+            {
+              "key": "description",
+              "label": "Description",
+              "type": "text"
+            },
+            {
+              "key": "preview",
+              "label": "Preview",
+              "type": "button",
+              "buttonText": "Preview",
+              "events": {
+                "click": "previewVoice.trigger({ voiceId: table1.selectedRow.data.id })"
+              }
+            }
+          ],
+          "selectedRow": "{{ state.selectedVoice }}",
+          "events": {
+            "rowClick": "updateState.trigger({ selectedVoice: table1.selectedRow.data })"
+          }
+        }
+      },
+      {
+        "key": "buttonGroup2",
+        "type": "widget",
+        "widgetType": "container",
+        "props": {
+          "layout": {
+            "type": "stack",
+            "direction": "horizontal",
+            "gap": "8px"
+          }
+        },
+        "children": ["button5", "button6"]
+      },
+      {
+        "key": "button5",
+        "type": "widget",
+        "widgetType": "button",
+        "props": {
+          "text": "Back to Script",
+          "style": {
+            "background": "#374151"
+          },
+          "events": {
+            "click": "setStage.trigger({ stage: 2 })"
+          }
+        }
+      },
+      {
+        "key": "button6",
+        "type": "widget",
+        "widgetType": "button",
+        "props": {
+          "text": "Generate Voice",
+          "style": {
+            "background": "#7C3AED"
+          },
+          "disabled": "{{ !state.selectedVoice }}",
+          "events": {
+            "click": "generateVoice.trigger()"
+          }
+        }
+      },
+      {
+        "key": "container5",
+        "type": "widget",
+        "widgetType": "container",
+        "props": {
+          "hidden": "{{ state.stage !== 4 }}"
+        },
+        "children": ["audio1", "button7"]
+      },
+      {
+        "key": "audio1",
+        "type": "widget",
+        "widgetType": "custom",
+        "props": {
+          "html": "<audio controls src='{{ state.audioUrl }}' style='width: 100%;'></audio>"
+        }
+      },
+      {
+        "key": "button7",
+        "type": "widget",
+        "widgetType": "button",
+        "props": {
+          "text": "Create New Video",
+          "style": {
+            "background": "#7C3AED"
+          },
+          "events": {
+            "click": "resetApp.trigger()"
+          }
+        }
+      }
+    ],
+    "queries": [
+      {
+        "id": "getVoices",
+        "type": "restapi",
+        "resourceId": "",
+        "method": "GET",
+        "url": "/api/voices",
+        "runWhenPageLoads": true,
+        "transformer": "// Filter voices based on provider and search\nconst voices = data.voices || [];\nconst provider = state.activeProvider || 'all';\nconst search = state.voiceSearch || '';\n\nreturn voices.filter(voice => {\n  const matchesProvider = provider === 'all' || voice.provider.toLowerCase() === provider;\n  const matchesSearch = !search || \n    voice.name.toLowerCase().includes(search.toLowerCase()) ||\n    (voice.description && voice.description.toLowerCase().includes(search.toLowerCase()));\n  return matchesProvider && matchesSearch;\n});"
+      },
+      {
+        "id": "generateScript",
+        "type": "restapi",
+        "resourceId": "",
+        "method": "POST",
+        "url": "/api/generate-script",
+        "body": "{\n  \"description\": \"{{ state.description }}\",\n  \"tone\": \"{{ state.tone }}\",\n  \"platforms\": {{ state.platforms }},\n  \"duration\": {{ state.duration }}\n}",
+        "onSuccess": "// Save script and advance to next stage\nsetState.trigger({\n  script: data,\n  stage: 2\n});"
+      },
+      {
+        "id": "previewVoice",
+        "type": "restapi",
+        "resourceId": "",
+        "method": "POST",
+        "url": "/api/voice-preview",
+        "body": "{\n  \"voiceId\": \"{{ this.params.voiceId }}\",\n  \"demoText\": \"Testing the new compact UI with Google AI Studio voices\"\n}",
+        "onSuccess": "// Play audio preview\nutils.showNotification({\n  message: 'Playing voice preview...',\n  type: 'success'\n});"
+      },
+      {
+        "id": "generateVoice",
+        "type": "restapi",
+        "resourceId": "",
+        "method": "POST",
+        "url": "/api/generate-voice",
+        "body": "{\n  \"scriptId\": \"{{ state.script.id }}\",\n  \"voiceId\": \"{{ state.selectedVoice.id }}\",\n  \"text\": \"{{ state.script.hook + ' ' + state.script.mainPoints.join(' ') + ' ' + state.script.callToAction }}\"\n}",
+        "onSuccess": "// Save audio URL and advance to final stage\nsetState.trigger({\n  audioUrl: data.voice.audioUrl,\n  stage: 4\n});"
+      },
+      {
+        "id": "setStage",
+        "type": "jsquery",
+        "query": "state.setValue({ ...state.value, stage: this.params.stage });"
+      },
+      {
+        "id": "updateState",
+        "type": "jsquery",
+        "query": "state.setValue({ ...state.value, ...this.params });"
+      },
+      {
+        "id": "setState",
+        "type": "jsquery",
+        "query": "state.setValue({ ...state.value, ...this.params });"
+      },
+      {
+        "id": "resetApp",
+        "type": "jsquery",
+        "query": "// Reset all state to initial values\nstate.setValue({\n  stage: 0,\n  description: '',\n  tone: 'Educational',\n  platforms: ['YouTube'],\n  duration: 30,\n  activeProvider: 'all',\n  voiceSearch: '',\n  selectedVoice: null,\n  script: null,\n  audioUrl: null\n});"
+      }
+    ],
+    "transformers": [],
+    "state": [
+      {
+        "id": "state",
+        "value": {
+          "stage": 0,
+          "description": "",
+          "tone": "Educational",
+          "platforms": ["YouTube"],
+          "duration": 30,
+          "activeProvider": "all",
+          "voiceSearch": "",
+          "selectedVoice": null,
+          "script": null,
+          "audioUrl": null
+        }
+      }
+    ],
+    "customCSS": ":root {\n  font-size: 60%;\n}\n\n/* Compact UI Implementation */\nbody {\n  font-size: 0.875rem;\n  background: #0f172a;\n}\n\nh1 { font-size: 1.5rem; }\nh2 { font-size: 1.25rem; }\nh3 { font-size: 1.125rem; }\nh4 { font-size: 1rem; }\n\ninput, textarea, select {\n  padding: 0.25rem 0.5rem !important;\n  font-size: 0.75rem !important;\n}\n\nbutton {\n  padding: 0.25rem 0.75rem !important;\n  font-size: 0.75rem !important;\n}\n\n/* Table compact styles */\n._retool-table1 {\n  font-size: 0.75rem;\n}\n\n._retool-table1 th,\n._retool-table1 td {\n  padding: 0.25rem 0.5rem !important;\n}\n\n/* Custom scrollbar */\n::-webkit-scrollbar {\n  width: 8px;\n}\n\n::-webkit-scrollbar-track {\n  background: #111827;\n}\n\n::-webkit-scrollbar-thumb {\n  background: #374151;\n  border-radius: 4px;\n}"
+  }
+}

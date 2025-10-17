@@ -1,0 +1,390 @@
+{
+  "name": "Social AI Pro",
+  "uuid": "social-ai-pro-app",
+  "version": "3.78.0",
+  "createdAt": "2025-01-31T00:00:00.000Z",
+  "page": {
+    "canvas": {
+      "type": "main",
+      "children": {
+        "container1": {
+          "type": "widget",
+          "subtype": "ContainerWidget",
+          "template": {
+            "ordered": [
+              {
+                "type": "widget",
+                "style": {
+                  "ordered": [
+                    { "background": "rgb(17, 24, 39)" }
+                  ]
+                }
+              },
+              {
+                "position2": {
+                  "container": "",
+                  "rowGroup": "body",
+                  "row": 0,
+                  "col": 0,
+                  "rowSpan": 12,
+                  "colSpan": 12
+                }
+              }
+            ]
+          },
+          "children": {
+            "appState": {
+              "type": "state",
+              "subtype": "State",
+              "template": {
+                "value": {
+                  "stage": 0,
+                  "description": "",
+                  "tone": "Educational",
+                  "platforms": ["YouTube"],
+                  "duration": 30,
+                  "activeProvider": "all",
+                  "voiceSearch": "",
+                  "selectedVoice": null,
+                  "script": null,
+                  "audioUrl": null
+                }
+              }
+            },
+            "titleText": {
+              "type": "widget",
+              "subtype": "TextWidget",
+              "template": {
+                "ordered": [
+                  {
+                    "value": "Social Media Science",
+                    "style": {
+                      "ordered": [
+                        { "fontSize": "32px" },
+                        { "color": "#ffffff" },
+                        { "fontWeight": "700" },
+                        { "textAlign": "center" }
+                      ]
+                    },
+                    "hidden": "{{ appState.value.stage !== 0 }}"
+                  }
+                ]
+              }
+            },
+            "subtitleText": {
+              "type": "widget",
+              "subtype": "TextWidget",
+              "template": {
+                "ordered": [
+                  {
+                    "value": "Transform user inputs into viral-worthy video scripts using research-backed principles and AI intelligence",
+                    "style": {
+                      "ordered": [
+                        { "fontSize": "16px" },
+                        { "color": "#9CA3AF" },
+                        { "textAlign": "center" }
+                      ]
+                    },
+                    "hidden": "{{ appState.value.stage !== 0 }}"
+                  }
+                ]
+              }
+            },
+            "startButton": {
+              "type": "widget",
+              "subtype": "ButtonWidget",
+              "template": {
+                "ordered": [
+                  {
+                    "text": "Start Creating",
+                    "style": {
+                      "ordered": [
+                        { "background": "#7C3AED" }
+                      ]
+                    },
+                    "clickEvent": [
+                      {
+                        "ordered": [
+                          {
+                            "event": "click",
+                            "method": "setValue",
+                            "pluginId": "appState",
+                            "params": {
+                              "ordered": [
+                                {
+                                  "value": "{{ {...appState.value, stage: 1} }}"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    ],
+                    "hidden": "{{ appState.value.stage !== 0 }}"
+                  }
+                ]
+              }
+            },
+            "inputContainer": {
+              "type": "widget",
+              "subtype": "ContainerWidget",
+              "template": {
+                "ordered": [
+                  {
+                    "hidden": "{{ appState.value.stage !== 1 }}"
+                  }
+                ]
+              },
+              "children": {
+                "inputTitle": {
+                  "type": "widget",
+                  "subtype": "TextWidget",
+                  "template": {
+                    "ordered": [
+                      {
+                        "value": "Describe Your Video Idea",
+                        "style": {
+                          "ordered": [
+                            { "fontSize": "24px" },
+                            { "fontWeight": "700" },
+                            { "color": "#ffffff" }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                "inputDescription": {
+                  "type": "widget",
+                  "subtype": "TextInputWidget",
+                  "template": {
+                    "ordered": [
+                      {
+                        "placeholder": "e.g., How to make perfect coffee at home",
+                        "label": "",
+                        "value": "{{ appState.value.description }}"
+                      }
+                    ]
+                  }
+                },
+                "selectTone": {
+                  "type": "widget",
+                  "subtype": "SelectWidget",
+                  "template": {
+                    "ordered": [
+                      {
+                        "label": "Tone",
+                        "data": "{{ ['Professional', 'Educational', 'Fun', 'Inspiring'] }}",
+                        "value": "{{ appState.value.tone }}"
+                      }
+                    ]
+                  }
+                },
+                "multiselectPlatforms": {
+                  "type": "widget",
+                  "subtype": "MultiselectWidget",
+                  "template": {
+                    "ordered": [
+                      {
+                        "label": "Platforms",
+                        "data": "{{ ['TikTok', 'Instagram', 'YouTube'] }}",
+                        "value": "{{ appState.value.platforms }}"
+                      }
+                    ]
+                  }
+                },
+                "numberDuration": {
+                  "type": "widget",
+                  "subtype": "NumberInputWidget",
+                  "template": {
+                    "ordered": [
+                      {
+                        "label": "Duration (seconds)",
+                        "value": "{{ appState.value.duration }}",
+                        "min": 10,
+                        "max": 120,
+                        "step": 10
+                      }
+                    ]
+                  }
+                },
+                "generateScriptButton": {
+                  "type": "widget",
+                  "subtype": "ButtonWidget",
+                  "template": {
+                    "ordered": [
+                      {
+                        "text": "Generate Smart Script",
+                        "style": {
+                          "ordered": [
+                            { "background": "#7C3AED" }
+                          ]
+                        },
+                        "clickEvent": [
+                          {
+                            "ordered": [
+                              {
+                                "event": "click",
+                                "method": "trigger",
+                                "pluginId": "generateScript"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "voiceContainer": {
+              "type": "widget",
+              "subtype": "ContainerWidget",
+              "template": {
+                "ordered": [
+                  {
+                    "hidden": "{{ appState.value.stage !== 3 }}",
+                    "style": {
+                      "ordered": [
+                        { "background": "rgb(31, 41, 55)" },
+                        { "padding": "16px" },
+                        { "borderRadius": "8px" }
+                      ]
+                    }
+                  }
+                ]
+              },
+              "children": {
+                "voiceTitle": {
+                  "type": "widget",
+                  "subtype": "TextWidget",
+                  "template": {
+                    "ordered": [
+                      {
+                        "value": "🎤 Select Your AI Voice",
+                        "style": {
+                          "ordered": [
+                            { "fontSize": "18px" },
+                            { "fontWeight": "700" },
+                            { "color": "#ffffff" },
+                            { "textAlign": "center" }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                "searchVoices": {
+                  "type": "widget",
+                  "subtype": "TextInputWidget",
+                  "template": {
+                    "ordered": [
+                      {
+                        "placeholder": "Search voices by name, style, or description...",
+                        "value": "{{ appState.value.voiceSearch }}"
+                      }
+                    ]
+                  }
+                },
+                "providerFilter": {
+                  "type": "widget",
+                  "subtype": "SegmentedControlWidget",
+                  "template": {
+                    "ordered": [
+                      {
+                        "items": "{{ [{label: 'All (43)', value: 'all'}, {label: '🤖 OpenAI (11)', value: 'openai'}, {label: '🎙️ ElevenLabs (24)', value: 'elevenlabs'}, {label: '🌐 Google AI (8)', value: 'google'}] }}",
+                        "value": "{{ appState.value.activeProvider }}"
+                      }
+                    ]
+                  }
+                },
+                "tableVoices": {
+                  "type": "widget",
+                  "subtype": "TableWidget",
+                  "template": {
+                    "ordered": [
+                      {
+                        "data": "{{ getVoices.data.filter(v => (appState.value.activeProvider === 'all' || v.provider.toLowerCase() === appState.value.activeProvider) && (!appState.value.voiceSearch || v.name.toLowerCase().includes(appState.value.voiceSearch.toLowerCase()))) }}",
+                        "columns": [
+                          {
+                            "key": "name",
+                            "name": "Voice Name",
+                            "type": "text"
+                          },
+                          {
+                            "key": "style",
+                            "name": "Style",
+                            "type": "text"
+                          },
+                          {
+                            "key": "description",
+                            "name": "Description",
+                            "type": "text"
+                          },
+                          {
+                            "key": "provider",
+                            "name": "Provider",
+                            "type": "text"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "queries": {
+      "getVoices": {
+        "type": "RESTQuery",
+        "resourceName": "SocialAIProAPI",
+        "runWhenPageLoads": true,
+        "method": "GET",
+        "route": "/api/voices"
+      },
+      "generateScript": {
+        "type": "RESTQuery",
+        "resourceName": "SocialAIProAPI",
+        "method": "POST",
+        "route": "/api/generate-script",
+        "body": "{{ { description: inputDescription.value, tone: selectTone.value, platforms: multiselectPlatforms.value, duration: numberDuration.value } }}",
+        "onSuccess": [
+          {
+            "method": "setValue",
+            "pluginId": "appState",
+            "params": {
+              "value": "{{ {...appState.value, script: generateScript.data, stage: 2} }}"
+            }
+          }
+        ]
+      },
+      "previewVoice": {
+        "type": "RESTQuery",
+        "resourceName": "SocialAIProAPI",
+        "method": "POST",
+        "route": "/api/voice-preview",
+        "body": "{{ { voiceId: tableVoices.selectedRow.id, demoText: 'Testing the new compact UI with Google AI Studio voices' } }}"
+      },
+      "generateVoice": {
+        "type": "RESTQuery",
+        "resourceName": "SocialAIProAPI",
+        "method": "POST",
+        "route": "/api/generate-voice",
+        "body": "{{ { scriptId: appState.value.script.id, voiceId: appState.value.selectedVoice.id, text: appState.value.script.hook + ' ' + appState.value.script.mainPoints.join(' ') + ' ' + appState.value.script.callToAction } }}",
+        "onSuccess": [
+          {
+            "method": "setValue",
+            "pluginId": "appState",
+            "params": {
+              "value": "{{ {...appState.value, audioUrl: generateVoice.data.voice.audioUrl, stage: 4} }}"
+            }
+          }
+        ]
+      }
+    },
+    "customCSS": "/* Compact UI - 40% smaller fonts */\n:root {\n  font-size: 60%;\n}\n\n/* Dark theme */\n._retool-container1 {\n  background: #111827;\n  padding: 24px;\n  min-height: 100vh;\n}\n\n/* Compact elements */\nbutton {\n  padding: 6px 16px !important;\n  font-size: 14px !important;\n}\n\ninput, textarea, select {\n  padding: 4px 8px !important;\n  font-size: 12px !important;\n}\n\n/* Compact table */\n._retool-tableVoices {\n  font-size: 12px;\n}\n\n._retool-tableVoices th,\n._retool-tableVoices td {\n  padding: 4px 8px !important;\n}\n\n/* Custom scrollbar */\n::-webkit-scrollbar {\n  width: 8px;\n}\n\n::-webkit-scrollbar-track {\n  background: #111827;\n}\n\n::-webkit-scrollbar-thumb {\n  background: #374151;\n  border-radius: 4px;\n}"
+  }
+}

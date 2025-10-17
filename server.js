@@ -9,6 +9,7 @@ import MediaService from './src/services/mediaService.js'
 import AuthService from './src/services/authService.js'
 import DemoGenerator from './src/services/demoGenerator.js'
 import { authenticateToken, checkVideoLimit, optionalAuth } from './src/middleware/auth.js'
+import retoolRoutes from './src/routes/retool.js'
 import {
   apiLimiter,
   authLimiter,
@@ -257,6 +258,9 @@ app.post('/api/search-media', optionalAuth, validate(searchMediaSchema), async (
   }
 })
 
+// Retool-specific routes
+retoolRoutes(app)
+
 // Video assembly endpoint
 app.post('/api/assemble-video', videoGenerationLimiter, authenticateToken, checkVideoLimit, validate(assembleVideoSchema), async (req, res) => {
   try {
@@ -307,3 +311,4 @@ if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
 }
 
 export default app
+

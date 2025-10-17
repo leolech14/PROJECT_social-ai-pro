@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dream Team Interactive - Agent Architecture & Communication</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            overflow: hidden;
+        }
+
+        #container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            grid-template-rows: 1fr 250px;
+            height: 100vh;
+            gap: 1px;
+            background: #333;
+        }
+
+        #visualization {
+            background: #0a0a0a;
+            position: relative;
+            grid-row: 1 / 3;
+        }
+
+        #sidebar {
+            background: #1a1a1a;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #log-stream {
+            background: #1a1a1a;
+            padding: 20px;
+            overflow-y: auto;
+            font-size: 12px;
+            border-top: 1px solid #333;
+        }
+
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            max-width: 300px;
+        }
+
+        .controls h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #fff;
+        }
+
+        button {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 6px 12px;
+            margin: 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #3a3a3a;
+            border-color: #666;
+        }
+
+        button.active {
+            background: #4a4a4a;
+            border-color: #888;
+        }
+
+        .node {
+            cursor: move;
+        }
+
+        .node rect {
+            stroke-width: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .node:hover rect {
+            stroke-width: 3px;
+            filter: brightness(1.2);
+        }
+
+        .node.selected rect {
+            stroke: #fff !important;
+            stroke-width: 4px;
+        }
+
+        .node text {
+            font-size: 12px;
+            pointer-events: none;
+            text-anchor: middle;
+            fill: #fff;
+        }
+
+        .node .model-badge {
+            font-size: 10px;
+            fill: #aaa;
+        }
+
+        .link {
+            fill: none;
+            stroke-opacity: 0.3;
+            stroke-width: 2px;
+            marker-end: url(#arrowhead);
+        }
+
+        .link.active {
+            stroke-opacity: 0.8;
+            stroke-width: 3px;
+            filter: drop-shadow(0 0 3px currentColor);
+        }
+
+        .link.communication {
+            stroke-dasharray: 5, 5;
+            animation: dash 20s linear infinite;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -1000;
+            }
+        }
+
+        .log-entry {
+            padding: 5px;
+            margin: 2px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .log-entry.INFO { background: #1e3a2a; border-left: 3px solid #10b981; }
+        .log-entry.WARN { background: #3a2a1e; border-left: 3px solid #f59e0b; }
+        .log-entry.ERROR { background: #3a1e1e; border-left: 3px solid #ef4444; }
+        .log-entry.CMD { background: #2a1e3a; border-left: 3px solid #8b5cf6; }
+
+        #agent-details {
+            margin-top: 20px;
+        }
+
+        .detail-section {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .detail-section h3 {
+            margin: 0 0 10px 0;
+            color: #4ade80;
+        }
+
+        .model-indicator {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+
+        .model-opus { background: #8b5cf6; }
+        .model-sonnet { background: #3b82f6; }
+        .model-haiku { background: #10b981; }
+
+        .tools-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .tool-badge {
+            background: #3a3a3a;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            border: 1px solid #555;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #444;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4ade80;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        #search-box {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #fff;
+        }
+
+        .communication-line {
+            stroke: #f59e0b;
+            stroke-width: 2;
+            stroke-dasharray: 5, 5;
+            fill: none;
+            opacity: 0;
+            animation: communicate 2s ease-in-out;
+        }
+
+        @keyframes communicate {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #444;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            font-size: 12px;
+            max-width: 300px;
+        }
+
+        #pattern-controls {
+            margin-top: 10px;
+        }
+
+        .pattern-button {
+            width: 100%;
+            margin: 2px 0;
+            text-align: left;
+            padding: 8px 12px;
+        }
+
+        .cost-indicator {
+            float: right;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: #333;
+        }
+
+        .layout-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="visualization">
+            <div class="controls">
+                <h3>Orchestration Controls</h3>
+                <input type="text" id="search-box" placeholder="Search agents...">
+                <div id="pattern-controls">
+                    <button class="pattern-button" onclick="executePattern('sequential')">
+                        Sequential Chain
+                        <span class="cost-indicator">~$0.05</span>
+                    </button>
+                    <button class="pattern-button" onclick="executePattern('parallel')">
+                        Parallel Split
+                        <span class="cost-indicator">~$0.03</span>
+                    </button>
+                    <button class="pattern-button" onclick="executePattern('review')">
+                        Review Loop
+                        <span class="cost-indicator">~$0.08</span>
+                    </button>
+                    <button class="pattern-button" onclick="executePattern('dynamic')">
+                        Dynamic Router
+                        <span class="cost-indicator">~$0.10</span>
+                    </button>
+                </div>
+                <hr style="border-color: #444; margin: 10px 0;">
+                <button onclick="resetLayout()">Reset Layout</button>
+                <button onclick="toggleSimulation()">Toggle Physics</button>
+                <button onclick="clearLog()">Clear Log</button>
+            </div>
+            
+            <div class="layout-controls">
+                <button onclick="setLayout('tree')">Tree</button>
+                <button onclick="setLayout('radial')">Radial</button>
+                <button onclick="setLayout('force')">Force</button>
+                <button onclick="setLayout('grid')">Grid</button>
+            </div>
+
+            <div class="legend">
+                <h4 style="margin: 0 0 10px 0;">Agent Models</h4>
+                <div class="legend-item">
+                    <div class="legend-color model-opus"></div>
+                    <span>Opus (Critical)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color model-sonnet"></div>
+                    <span>Sonnet (General)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color model-haiku"></div>
+                    <span>Haiku (Utility)</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="sidebar">
+            <h2>Agent Inspector</h2>
+            <div id="agent-details">
+                <p>Click an agent to inspect details</p>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-agents">12</div>
+                    <div class="stat-label">Total Agents</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="active-tasks">0</div>
+                    <div class="stat-label">Active Tasks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="messages-sent">0</div>
+                    <div class="stat-label">Messages</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-cost">$0.00</div>
+                    <div class="stat-label">Session Cost</div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="log-stream">
+            <h3>Communication Log</h3>
+            <div id="log-entries"></div>
+        </div>
+    </div>
+    
+    <div class="tooltip"></div>
+
+    <script>
+        // Enhanced agent data with communication patterns
+        const agents = [
+            {
+                id: "orchestrator-prime",
+                name: "Orchestrator Prime",
+                model: "opus",
+                type: "orchestrator",
+                description: "Master orchestrator for complex operations",
+                tools: ["Task", "TodoWrite", "Read", "Grep", "LS"],
+                publishes: ["task-assignment", "pattern-selection"],
+                subscribes: ["task-complete", "error"],
+                x: 400, y: 50
+            },
+            {
+                id: "development-lead",
+                name: "Development Lead",
+                model: "sonnet",
+                type: "lead",
+                description: "Coordinates all development activities",
+                tools: ["Task", "Read", "Write", "Edit", "MultiEdit"],
+                publishes: ["dev-task", "code-ready"],
+                subscribes: ["task-assignment", "review-complete"],
+                x: 200, y: 150
+            },
+            {
+                id: "operations-lead",
+                name: "Operations Lead",
+                model: "sonnet",
+                type: "lead",
+                description: "Manages infrastructure and deployments",
+                tools: ["Task", "Bash", "Read", "Grep", "LS"],
+                publishes: ["deployment", "health-check"],
+                subscribes: ["task-assignment", "alert"],
+                x: 400, y: 150
+            },
+            {
+                id: "quality-lead",
+                name: "Quality Lead",
+                model: "sonnet",
+                type: "lead",
+                description: "Ensures quality standards",
+                tools: ["Task", "Read", "Bash", "Grep", "TodoWrite"],
+                publishes: ["review-complete", "test-results"],
+                subscribes: ["code-ready", "review-request"],
+                x: 600, y: 150
+            },
+            {
+                id: "ui-specialist",
+                name: "UI Specialist",
+                model: "sonnet",
+                type: "specialist",
+                description: "Frontend and component expert",
+                tools: ["Read", "Write", "Edit", "MultiEdit", "WebSearch"],
+                publishes: ["component-ready", "ui-update"],
+                subscribes: ["dev-task", "design-update"],
+                x: 100, y: 250
+            },
+            {
+                id: "backend-specialist",
+                name: "Backend Specialist",
+                model: "sonnet",
+                type: "specialist",
+                description: "API and service architect",
+                tools: ["Read", "Write", "Edit", "Bash", "WebFetch"],
+                publishes: ["api-ready", "service-update"],
+                subscribes: ["dev-task", "api-spec"],
+                x: 200, y: 250
+            },
+            {
+                id: "database-specialist",
+                name: "Database Specialist",
+                model: "sonnet",
+                type: "specialist",
+                description: "Database optimization expert",
+                tools: ["Read", "Write", "Edit", "Bash"],
+                publishes: ["schema-update", "query-optimized"],
+                subscribes: ["dev-task", "performance-issue"],
+                x: 300, y: 250
+            },
+            {
+                id: "bug-detective",
+                name: "Bug Detective",
+                model: "sonnet",
+                type: "specialist",
+                description: "Elite debugger",
+                tools: ["Read", "Grep", "Glob", "LS", "Bash"],
+                publishes: ["bug-found", "fix-ready"],
+                subscribes: ["bug-report", "test-failure"],
+                x: 100, y: 350
+            },
+            {
+                id: "guardian-enforcer",
+                name: "Guardian Enforcer",
+                model: "opus",
+                type: "enforcer",
+                description: "Enforces all hub rules",
+                tools: ["Bash", "Read", "Grep", "LS"],
+                publishes: ["violation", "compliance-check"],
+                subscribes: ["all"],
+                x: 400, y: 350
+            },
+            {
+                id: "test-engineer",
+                name: "Test Engineer",
+                model: "sonnet",
+                type: "specialist",
+                description: "Comprehensive testing",
+                tools: ["Read", "Write", "Edit", "Bash"],
+                publishes: ["test-results", "coverage-report"],
+                subscribes: ["code-ready", "test-request"],
+                x: 600, y: 250
+            },
+            {
+                id: "rapid-prototype",
+                name: "Rapid Prototype",
+                model: "haiku",
+                type: "utility",
+                description: "Quick MVP creator",
+                tools: ["Write", "Edit", "MultiEdit", "Bash"],
+                publishes: ["mvp-ready", "prototype-demo"],
+                subscribes: ["prototype-request"],
+                x: 500, y: 350
+            },
+            {
+                id: "color-specialist",
+                name: "Color Specialist",
+                model: "haiku",
+                type: "utility",
+                description: "Accessibility and design",
+                tools: ["Read", "Write", "WebSearch"],
+                publishes: ["palette-ready", "wcag-report"],
+                subscribes: ["design-request", "ui-update"],
+                x: 700, y: 350
+            }
+        ];
+
+        // Define relationships
+        const relationships = [
+            // Orchestrator to leads
+            {source: "orchestrator-prime", target: "development-lead", type: "command"},
+            {source: "orchestrator-prime", target: "operations-lead", type: "command"},
+            {source: "orchestrator-prime", target: "quality-lead", type: "command"},
+            
+            // Development lead to specialists
+            {source: "development-lead", target: "ui-specialist", type: "delegate"},
+            {source: "development-lead", target: "backend-specialist", type: "delegate"},
+            {source: "development-lead", target: "database-specialist", type: "delegate"},
+            {source: "development-lead", target: "bug-detective", type: "delegate"},
+            
+            // Operations lead to specialists
+            {source: "operations-lead", target: "guardian-enforcer", type: "delegate"},
+            
+            // Quality lead to specialists
+            {source: "quality-lead", target: "test-engineer", type: "delegate"},
+            
+            // Utility connections
+            {source: "orchestrator-prime", target: "rapid-prototype", type: "direct"},
+            {source: "ui-specialist", target: "color-specialist", type: "consult"}
+        ];
+
+        // Color schemes
+        const modelColors = {
+            opus: "#8b5cf6",
+            sonnet: "#3b82f6",
+            haiku: "#10b981"
+        };
+
+        const typeColors = {
+            orchestrator: "#8b5cf6",
+            lead: "#3b82f6",
+            specialist: "#10b981",
+            enforcer: "#f59e0b",
+            utility: "#6366f1"
+        };
+
+        // Set up SVG
+        const width = document.getElementById('visualization').clientWidth;
+        const height = document.getElementById('visualization').clientHeight;
+
+        const svg = d3.select("#visualization")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // Add arrow marker
+        svg.append("defs").append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "-0 -5 10 10")
+            .attr("refX", 20)
+            .attr("refY", 0)
+            .attr("orient", "auto")
+            .attr("markerWidth", 8)
+            .attr("markerHeight", 8)
+            .append("svg:path")
+            .attr("d", "M 0,-5 L 10,0 L 0,5")
+            .attr("fill", "#666");
+
+        const g = svg.append("g");
+
+        // Zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.5, 3])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+
+        svg.call(zoom);
+
+        // Create force simulation
+        let simulation = d3.forceSimulation(agents)
+            .force("link", d3.forceLink(relationships)
+                .id(d => d.id)
+                .distance(150))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collision", d3.forceCollide().radius(60));
+
+        // Create links
+        const link = g.append("g")
+            .selectAll("line")
+            .data(relationships)
+            .enter().append("line")
+            .attr("class", "link")
+            .style("stroke", "#666");
+
+        // Create nodes
+        const node = g.append("g")
+            .selectAll("g")
+            .data(agents)
+            .enter().append("g")
+            .attr("class", "node")
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended))
+            .on("click", selectAgent)
+            .on("mouseover", showTooltip)
+            .on("mouseout", hideTooltip);
+
+        // Add rectangles for nodes
+        node.append("rect")
+            .attr("width", 120)
+            .attr("height", 50)
+            .attr("x", -60)
+            .attr("y", -25)
+            .attr("rx", 5)
+            .style("fill", d => modelColors[d.model])
+            .style("stroke", "#fff");
+
+        // Add agent names
+        node.append("text")
+            .attr("dy", -5)
+            .text(d => d.name)
+            .style("font-size", "12px");
+
+        // Add model badges
+        node.append("text")
+            .attr("class", "model-badge")
+            .attr("dy", 10)
+            .text(d => d.model.toUpperCase());
+
+        // Update positions
+        simulation.on("tick", () => {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node.attr("transform", d => `translate(${d.x},${d.y})`);
+        });
+
+        // Drag functions
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            // Keep position fixed after drag
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        // Agent selection
+        let selectedAgent = null;
+        function selectAgent(event, d) {
+            // Remove previous selection
+            d3.selectAll(".node").classed("selected", false);
+            
+            // Select new agent
+            d3.select(this).classed("selected", true);
+            selectedAgent = d;
+            
+            // Update details panel
+            updateAgentDetails(d);
+            
+            // Highlight connections
+            highlightConnections(d);
+        }
+
+        function updateAgentDetails(agent) {
+            const details = document.getElementById('agent-details');
+            details.innerHTML = `
+                <div class="detail-section">
+                    <h3>${agent.name}
+                        <span class="model-indicator model-${agent.model}">${agent.model.toUpperCase()}</span>
+                    </h3>
+                    <p>${agent.description}</p>
+                    
+                    <h4>Tools</h4>
+                    <div class="tools-list">
+                        ${agent.tools.map(tool => `<span class="tool-badge">${tool}</span>`).join('')}
+                    </div>
+                    
+                    <h4>Communication</h4>
+                    <p><strong>Publishes:</strong> ${agent.publishes.join(', ')}</p>
+                    <p><strong>Subscribes:</strong> ${agent.subscribes.join(', ')}</p>
+                </div>
+            `;
+        }
+
+        function highlightConnections(agent) {
+            // Reset all links
+            link.style("stroke-opacity", 0.1);
+            
+            // Highlight connected links
+            link.filter(d => d.source.id === agent.id || d.target.id === agent.id)
+                .style("stroke-opacity", 0.8)
+                .style("stroke", d => d.source.id === agent.id ? "#4ade80" : "#f59e0b");
+        }
+
+        // Tooltip
+        const tooltip = d3.select(".tooltip");
+        
+        function showTooltip(event, d) {
+            tooltip
+                .style("opacity", 1)
+                .html(`
+                    <strong>${d.name}</strong><br>
+                    Model: ${d.model}<br>
+                    Type: ${d.type}<br>
+                    Tools: ${d.tools.length}
+                `)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px");
+        }
+
+        function hideTooltip() {
+            tooltip.style("opacity", 0);
+        }
+
+        // Search functionality
+        document.getElementById('search-box').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            
+            node.style("opacity", d => {
+                const matches = d.name.toLowerCase().includes(searchTerm) ||
+                               d.description.toLowerCase().includes(searchTerm) ||
+                               d.tools.some(t => t.toLowerCase().includes(searchTerm));
+                return matches ? 1 : 0.2;
+            });
+            
+            link.style("opacity", d => {
+                const sourceMatch = d.source.name.toLowerCase().includes(searchTerm);
+                const targetMatch = d.target.name.toLowerCase().includes(searchTerm);
+                return (sourceMatch || targetMatch) ? 0.6 : 0.1;
+            });
+        });
+
+        // Layout functions
+        function setLayout(type) {
+            simulation.stop();
+            
+            switch(type) {
+                case 'tree':
+                    layoutTree();
+                    break;
+                case 'radial':
+                    layoutRadial();
+                    break;
+                case 'force':
+                    resetLayout();
+                    break;
+                case 'grid':
+                    layoutGrid();
+                    break;
+            }
+            
+            simulation.alpha(0.3).restart();
+        }
+
+        function layoutTree() {
+            const levels = {
+                'orchestrator': 0,
+                'lead': 1,
+                'specialist': 2,
+                'enforcer': 2,
+                'utility': 2
+            };
+            
+            const levelCounts = {};
+            agents.forEach(d => {
+                const level = levels[d.type];
+                levelCounts[level] = (levelCounts[level] || 0) + 1;
+            });
+            
+            const levelIndices = {};
+            agents.forEach(d => {
+                const level = levels[d.type];
+                levelIndices[level] = (levelIndices[level] || 0) + 1;
+                
+                d.fx = (levelIndices[level] / (levelCounts[level] + 1)) * width;
+                d.fy = (level + 1) * height / 4;
+            });
+        }
+
+        function layoutRadial() {
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) / 3;
+            
+            agents.forEach((d, i) => {
+                const angle = (i / agents.length) * 2 * Math.PI;
+                d.fx = centerX + radius * Math.cos(angle);
+                d.fy = centerY + radius * Math.sin(angle);
+            });
+        }
+
+        function layoutGrid() {
+            const cols = Math.ceil(Math.sqrt(agents.length));
+            const cellWidth = width / cols;
+            const cellHeight = height / Math.ceil(agents.length / cols);
+            
+            agents.forEach((d, i) => {
+                d.fx = (i % cols + 0.5) * cellWidth;
+                d.fy = (Math.floor(i / cols) + 0.5) * cellHeight;
+            });
+        }
+
+        function resetLayout() {
+            agents.forEach(d => {
+                d.fx = null;
+                d.fy = null;
+            });
+            simulation.alpha(1).restart();
+        }
+
+        function toggleSimulation() {
+            if (simulation.alpha() > 0) {
+                simulation.stop();
+            } else {
+                simulation.alpha(0.3).restart();
+            }
+        }
+
+        // Communication log
+        let messageCount = 0;
+        let totalCost = 0;
+        let activeTasks = 0;
+
+        function addLogEntry(level, agent, message, topic = 'general') {
+            const logEntries = document.getElementById('log-entries');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${level}`;
+            entry.innerHTML = `<strong>[${agent}]</strong> ${message}`;
+            
+            logEntries.insertBefore(entry, logEntries.firstChild);
+            
+            // Keep only last 50 entries
+            while (logEntries.children.length > 50) {
+                logEntries.removeChild(logEntries.lastChild);
+            }
+            
+            // Update stats
+            messageCount++;
+            document.getElementById('messages-sent').textContent = messageCount;
+            
+            // Animate communication line
+            if (topic === 'task') {
+                animateCommunication(agent);
+            }
+        }
+
+        function animateCommunication(agentId) {
+            const agent = agents.find(a => a.id === agentId);
+            if (!agent) return;
+            
+            const connections = relationships.filter(r => 
+                r.source.id === agentId || r.target.id === agentId
+            );
+            
+            connections.forEach(conn => {
+                const line = g.append("line")
+                    .attr("class", "communication-line")
+                    .attr("x1", conn.source.x)
+                    .attr("y1", conn.source.y)
+                    .attr("x2", conn.target.x)
+                    .attr("y2", conn.target.y);
+                
+                setTimeout(() => line.remove(), 2000);
+            });
+        }
+
+        function clearLog() {
+            document.getElementById('log-entries').innerHTML = '';
+            messageCount = 0;
+            document.getElementById('messages-sent').textContent = '0';
+        }
+
+        // Pattern execution
+        function executePattern(pattern) {
+            activeTasks++;
+            document.getElementById('active-tasks').textContent = activeTasks;
+            
+            switch(pattern) {
+                case 'sequential':
+                    executeSequential();
+                    break;
+                case 'parallel':
+                    executeParallel();
+                    break;
+                case 'review':
+                    executeReview();
+                    break;
+                case 'dynamic':
+                    executeDynamic();
+                    break;
+            }
+            
+            // Update cost
+            const costs = {
+                sequential: 0.05,
+                parallel: 0.03,
+                review: 0.08,
+                dynamic: 0.10
+            };
+            totalCost += costs[pattern];
+            document.getElementById('total-cost').textContent = `$${totalCost.toFixed(2)}`;
+        }
+
+        function executeSequential() {
+            addLogEntry('INFO', 'orchestrator-prime', 'Starting sequential chain', 'task');
+            
+            setTimeout(() => {
+                addLogEntry('INFO', 'development-lead', 'Planning implementation', 'task');
+                animateCommunication('development-lead');
+            }, 500);
+            
+            setTimeout(() => {
+                addLogEntry('INFO', 'ui-specialist', 'Creating components', 'task');
+                animateCommunication('ui-specialist');
+            }, 1500);
+            
+            setTimeout(() => {
+                addLogEntry('INFO', 'backend-specialist', 'Building APIs', 'task');
+                animateCommunication('backend-specialist');
+            }, 2500);
+            
+            setTimeout(() => {
+                addLogEntry('INFO', 'quality-lead', 'Running tests', 'task');
+                animateCommunication('quality-lead');
+            }, 3500);
+            
+            setTimeout(() => {
+                addLogEntry('INFO', 'operations-lead', 'Deploying to production', 'task');
+                animateCommunication('operations-lead');
+                activeTasks--;
+                document.getElementById('active-tasks').textContent = activeTasks;
+            }, 4500);
+        }
+
+        function executeParallel() {
+            addLogEntry('INFO', 'orchestrator-prime', 'Starting parallel execution', 'task');
+            
+            setTimeout(() => {
+                addLogEntry('INFO', 'development-lead', 'Delegating to specialists', 'task');
+                animateCommunication('development-lead');
+                
+                // All specialists work in parallel
+                addLogEntry('INFO', 'ui-specialist', 'Working on frontend', 'task');
+                addLogEntry('INFO', 'backend-specialist', 'Building services', 'task');
+                addLogEntry('INFO', 'database-specialist', 'Optimizing queries', 'task');
+                
+                animateCommunication('ui-specialist');
+                animateCommunication('backend-specialist');
+                animateCommunication('database-specialist');
+            }, 500);
+            
+            setTimeout(() => {
+                addLogEntry('INFO', 'development-lead', 'Merging results', 'task');
+                activeTasks--;
+                document.getElementById('active-tasks').textContent = activeTasks;
+            }, 2500);
+        }
+
+        function executeReview() {
+            addLogEntry('INFO', 'orchestrator-prime', 'Starting review loop', 'task');
+            
+            let iteration = 0;
+            function reviewIteration() {
+                iteration++;
+                addLogEntry('INFO', 'development-lead', `Implementation iteration ${iteration}`, 'task');
+                
+                setTimeout(() => {
+                    addLogEntry('INFO', 'quality-lead', 'Reviewing implementation', 'task');
+                    animateCommunication('quality-lead');
+                    
+                    if (iteration < 2) {
+                        addLogEntry('WARN', 'test-engineer', 'Issues found, needs fixes', 'task');
+                        setTimeout(reviewIteration, 1000);
+                    } else {
+                        addLogEntry('INFO', 'quality-lead', 'Review passed!', 'task');
+                        activeTasks--;
+                        document.getElementById('active-tasks').textContent = activeTasks;
+                    }
+                }, 1000);
+            }
+            
+            setTimeout(reviewIteration, 500);
+        }
+
+        function executeDynamic() {
+            addLogEntry('CMD', 'orchestrator-prime', 'Analyzing task complexity...', 'task');
+            
+            setTimeout(() => {
+                addLogEntry('INFO', 'orchestrator-prime', 'Selected optimal pattern: parallel', 'task');
+                executeParallel();
+            }, 1000);
+        }
+
+        // Initialize with a welcome message
+        addLogEntry('INFO', 'system', 'Dream Team Agent System initialized');
+        addLogEntry('INFO', 'guardian-enforcer', 'All systems compliant and ready');
+
+        // Periodic health checks
+        setInterval(() => {
+            if (Math.random() > 0.7) {
+                addLogEntry('INFO', 'health-monitor', 'System health check: All agents responsive');
+            }
+        }, 30000);
+
+        // Cost model information
+        const costInfo = {
+            opus: 0.015,    // per 1k tokens
+            sonnet: 0.003,  // per 1k tokens
+            haiku: 0.0002   // per 1k tokens
+        };
+    </script>
+</body>
+</html>

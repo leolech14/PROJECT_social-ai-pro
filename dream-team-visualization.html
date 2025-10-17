@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code Dream Team - Agent Architecture</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            overflow: hidden;
+        }
+
+        #container {
+            display: flex;
+            height: 100vh;
+        }
+
+        #visualization {
+            flex: 1;
+            position: relative;
+        }
+
+        #sidebar {
+            width: 400px;
+            background: #1a1a1a;
+            border-left: 1px solid #333;
+            padding: 20px;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        #sidebar.collapsed {
+            transform: translateX(100%);
+        }
+
+        .toggle-btn {
+            position: absolute;
+            right: 420px;
+            top: 20px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            z-index: 1000;
+            transition: right 0.3s ease;
+        }
+
+        .toggle-btn.collapsed {
+            right: 20px;
+        }
+
+        h1, h2, h3 {
+            color: #fff;
+            margin-top: 0;
+        }
+
+        .agent-details {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .agent-details h3 {
+            margin: 0 0 10px 0;
+            color: #4ade80;
+        }
+
+        .agent-details .model {
+            color: #60a5fa;
+            font-size: 14px;
+        }
+
+        .agent-details .tools {
+            color: #f59e0b;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .agent-details .description {
+            color: #a1a1aa;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(26, 26, 26, 0.9);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .legend h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(26, 26, 26, 0.9);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        button {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #3a3a3a;
+            border-color: #666;
+        }
+
+        .node {
+            cursor: pointer;
+        }
+
+        .node circle {
+            stroke-width: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .node:hover circle {
+            stroke-width: 5px;
+            filter: brightness(1.2);
+        }
+
+        .node text {
+            font-size: 12px;
+            pointer-events: none;
+            text-anchor: middle;
+            fill: #fff;
+            text-shadow: 0 0 3px rgba(0,0,0,0.8);
+        }
+
+        .link {
+            fill: none;
+            stroke-opacity: 0.6;
+            stroke-width: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .link:hover {
+            stroke-opacity: 1;
+            stroke-width: 4px;
+        }
+
+        .link.active {
+            stroke-opacity: 1;
+            stroke-width: 4px;
+            filter: drop-shadow(0 0 3px currentColor);
+        }
+
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #444;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            font-size: 14px;
+            max-width: 300px;
+        }
+
+        #pattern-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+        }
+
+        #pattern-info h3 {
+            color: #f59e0b;
+            margin-bottom: 10px;
+        }
+
+        .pattern-flow {
+            font-family: monospace;
+            color: #4ade80;
+            margin: 10px 0;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .stat {
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            color: #4ade80;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #a1a1aa;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="visualization">
+            <button class="toggle-btn" onclick="toggleSidebar()">☰ Toggle Details</button>
+            <div class="controls">
+                <h3>Orchestration Patterns</h3>
+                <button onclick="showPattern('all')">All Connections</button>
+                <button onclick="showPattern('sequential')">Sequential Chain</button>
+                <button onclick="showPattern('parallel')">Parallel Split</button>
+                <button onclick="showPattern('review')">Review Loop</button>
+            </div>
+            <div class="legend">
+                <h3>Agent Types</h3>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #8b5cf6;"></div>
+                    <span>Orchestrator (Opus)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3b82f6;"></div>
+                    <span>Team Leads (Sonnet)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #10b981;"></div>
+                    <span>Specialists (Sonnet)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f59e0b;"></div>
+                    <span>Enforcers (Opus)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #6366f1;"></div>
+                    <span>Utilities (Haiku)</span>
+                </div>
+            </div>
+        </div>
+        <div id="sidebar">
+            <h1>Dream Team Architecture</h1>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">12</div>
+                    <div class="stat-label">Total Agents</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">4</div>
+                    <div class="stat-label">Team Leads</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Models Used</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">∞</div>
+                    <div class="stat-label">Parallel Tasks</div>
+                </div>
+            </div>
+            <div id="agent-info">
+                <h2>Click an agent to see details</h2>
+            </div>
+            <div id="pattern-info">
+                <h3>Active Pattern: All Connections</h3>
+                <div class="pattern-flow">
+                    User → Orchestrator → Team Leads → Specialists
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tooltip"></div>
+
+    <script>
+        // Agent hierarchy data
+        const agentData = {
+            name: "orchestrator-prime",
+            model: "opus",
+            type: "orchestrator",
+            description: "Master orchestrator for complex multi-phase operations",
+            tools: ["Task", "TodoWrite", "Read", "Grep", "LS"],
+            children: [
+                {
+                    name: "development-lead",
+                    model: "sonnet",
+                    type: "lead",
+                    description: "Leads all development activities",
+                    tools: ["Task", "Read", "Write", "Edit", "MultiEdit", "Grep", "Glob"],
+                    children: [
+                        {
+                            name: "ui-specialist",
+                            model: "sonnet",
+                            type: "specialist",
+                            description: "Frontend expert for modern frameworks",
+                            tools: ["Read", "Write", "Edit", "MultiEdit", "WebSearch"]
+                        },
+                        {
+                            name: "backend-specialist",
+                            model: "sonnet",
+                            type: "specialist",
+                            description: "API architect and backend systems expert",
+                            tools: ["Read", "Write", "Edit", "Bash", "WebFetch"]
+                        },
+                        {
+                            name: "database-specialist",
+                            model: "sonnet",
+                            type: "specialist",
+                            description: "Database architect for SQL and NoSQL",
+                            tools: ["Read", "Write", "Edit", "Bash"]
+                        },
+                        {
+                            name: "bug-detective",
+                            model: "sonnet",
+                            type: "specialist",
+                            description: "Elite debugger and root cause analyst",
+                            tools: ["Read", "Grep", "Glob", "LS", "Bash"]
+                        }
+                    ]
+                },
+                {
+                    name: "operations-lead",
+                    model: "sonnet",
+                    type: "lead",
+                    description: "Manages infrastructure and system health",
+                    tools: ["Task", "Bash", "Read", "Grep", "LS"],
+                    children: [
+                        {
+                            name: "guardian-enforcer",
+                            model: "opus",
+                            type: "enforcer",
+                            description: "Enforces all hub rules and compliance",
+                            tools: ["Bash", "Read", "Grep", "LS"]
+                        },
+                        {
+                            name: "health-monitor",
+                            model: "sonnet",
+                            type: "specialist",
+                            description: "Monitors system health and performance",
+                            tools: ["Read", "Bash", "Grep", "LS"]
+                        },
+                        {
+                            name: "file-manager",
+                            model: "haiku",
+                            type: "utility",
+                            description: "Manages file system organization",
+                            tools: ["Bash", "LS", "Glob", "Read"]
+                        }
+                    ]
+                },
+                {
+                    name: "quality-lead",
+                    model: "sonnet",
+                    type: "lead",
+                    description: "Ensures all deliverables meet quality standards",
+                    tools: ["Task", "Read", "Bash", "Grep", "TodoWrite"],
+                    children: [
+                        {
+                            name: "test-engineer",
+                            model: "sonnet",
+                            type: "specialist",
+                            description: "Creates and executes comprehensive tests",
+                            tools: ["Read", "Write", "Edit", "Bash"]
+                        },
+                        {
+                            name: "code-reviewer",
+                            model: "sonnet",
+                            type: "specialist",
+                            description: "Reviews code quality and standards",
+                            tools: ["Read", "Grep", "Glob"]
+                        }
+                    ]
+                },
+                {
+                    name: "rapid-prototype",
+                    model: "haiku",
+                    type: "utility",
+                    description: "Creates quick MVPs for validation",
+                    tools: ["Write", "Edit", "MultiEdit", "Bash"],
+                    children: []
+                },
+                {
+                    name: "color-specialist",
+                    model: "haiku",
+                    type: "utility",
+                    description: "Master of color theory and accessibility",
+                    tools: ["Read", "Write", "WebSearch"],
+                    children: []
+                }
+            ]
+        };
+
+        // Color mapping
+        const colorMap = {
+            orchestrator: "#8b5cf6",
+            lead: "#3b82f6",
+            specialist: "#10b981",
+            enforcer: "#f59e0b",
+            utility: "#6366f1"
+        };
+
+        // Set up dimensions
+        const width = window.innerWidth - 400;
+        const height = window.innerHeight;
+
+        // Create SVG
+        const svg = d3.select("#visualization")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // Create groups
+        const g = svg.append("g")
+            .attr("transform", `translate(${width/2},${height/2})`);
+
+        // Create zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.5, 3])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+
+        svg.call(zoom);
+
+        // Create hierarchy
+        const root = d3.hierarchy(agentData);
+        const treeLayout = d3.tree()
+            .size([2 * Math.PI, Math.min(width, height) / 2 - 100])
+            .separation((a, b) => (a.parent == b.parent ? 1 : 2) / a.depth);
+
+        treeLayout(root);
+
+        // Create links
+        const link = g.selectAll(".link")
+            .data(root.links())
+            .enter().append("path")
+            .attr("class", "link")
+            .attr("d", d3.linkRadial()
+                .angle(d => d.x)
+                .radius(d => d.y))
+            .style("stroke", d => colorMap[d.target.data.type])
+            .attr("id", d => `link-${d.source.data.name}-${d.target.data.name}`);
+
+        // Create nodes
+        const node = g.selectAll(".node")
+            .data(root.descendants())
+            .enter().append("g")
+            .attr("class", "node")
+            .attr("transform", d => `
+                rotate(${d.x * 180 / Math.PI - 90})
+                translate(${d.y},0)
+            `)
+            .on("click", showAgentDetails)
+            .on("mouseover", showTooltip)
+            .on("mouseout", hideTooltip);
+
+        // Add circles
+        node.append("circle")
+            .attr("r", d => d.depth === 0 ? 15 : d.children ? 10 : 8)
+            .style("fill", d => colorMap[d.data.type])
+            .style("stroke", "#fff");
+
+        // Add labels
+        node.append("text")
+            .attr("dy", ".31em")
+            .attr("x", d => d.x < Math.PI === !d.children ? 6 : -6)
+            .attr("text-anchor", d => d.x < Math.PI === !d.children ? "start" : "end")
+            .attr("transform", d => d.x >= Math.PI ? "rotate(180)" : null)
+            .text(d => d.data.name.replace(/-/g, ' '))
+            .style("font-size", d => d.depth === 0 ? "14px" : "12px");
+
+        // Tooltip functions
+        const tooltip = d3.select(".tooltip");
+
+        function showTooltip(event, d) {
+            tooltip
+                .style("opacity", 1)
+                .html(`
+                    <strong>${d.data.name}</strong><br>
+                    Model: ${d.data.model}<br>
+                    Type: ${d.data.type}<br>
+                    Tools: ${d.data.tools.length}
+                `)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px");
+        }
+
+        function hideTooltip() {
+            tooltip.style("opacity", 0);
+        }
+
+        // Show agent details
+        function showAgentDetails(event, d) {
+            const agentInfo = document.getElementById("agent-info");
+            agentInfo.innerHTML = `
+                <div class="agent-details">
+                    <h3>${d.data.name.replace(/-/g, ' ').toUpperCase()}</h3>
+                    <div class="model">Model: ${d.data.model}</div>
+                    <div class="description">${d.data.description}</div>
+                    <div class="tools">Tools: ${d.data.tools.join(", ")}</div>
+                    ${d.children ? `<div class="tools">Team Size: ${d.children.length} agents</div>` : ''}
+                </div>
+            `;
+
+            // Highlight connections
+            d3.selectAll(".link").style("stroke-opacity", 0.2);
+            d3.selectAll(".link")
+                .filter(l => l.source === d || l.target === d)
+                .style("stroke-opacity", 1)
+                .classed("active", true);
+        }
+
+        // Pattern visualization
+        function showPattern(pattern) {
+            d3.selectAll(".link")
+                .style("stroke-opacity", 0.2)
+                .classed("active", false);
+
+            const patternInfo = document.getElementById("pattern-info");
+            
+            switch(pattern) {
+                case 'all':
+                    d3.selectAll(".link").style("stroke-opacity", 0.6);
+                    patternInfo.innerHTML = `
+                        <h3>Active Pattern: All Connections</h3>
+                        <div class="pattern-flow">
+                            User → Orchestrator → Team Leads → Specialists
+                        </div>
+                    `;
+                    break;
+                    
+                case 'sequential':
+                    // Show development workflow
+                    highlightPath(['orchestrator-prime', 'development-lead', 'ui-specialist', 'backend-specialist', 'database-specialist']);
+                    patternInfo.innerHTML = `
+                        <h3>Active Pattern: Sequential Chain</h3>
+                        <div class="pattern-flow">
+                            Plan → UI → Backend → Database → Deploy
+                        </div>
+                    `;
+                    break;
+                    
+                case 'parallel':
+                    // Show parallel execution
+                    highlightPath(['orchestrator-prime', 'development-lead']);
+                    highlightPath(['development-lead', 'ui-specialist']);
+                    highlightPath(['development-lead', 'backend-specialist']);
+                    highlightPath(['development-lead', 'database-specialist']);
+                    patternInfo.innerHTML = `
+                        <h3>Active Pattern: Parallel Split</h3>
+                        <div class="pattern-flow">
+                            Development Lead → [UI || Backend || Database]
+                        </div>
+                    `;
+                    break;
+                    
+                case 'review':
+                    // Show review loop
+                    highlightPath(['orchestrator-prime', 'quality-lead', 'code-reviewer', 'test-engineer']);
+                    patternInfo.innerHTML = `
+                        <h3>Active Pattern: Review Loop</h3>
+                        <div class="pattern-flow">
+                            Code → Review → Test → Fix → Review → Merge
+                        </div>
+                    `;
+                    break;
+            }
+        }
+
+        function highlightPath(nodeNames) {
+            for (let i = 0; i < nodeNames.length - 1; i++) {
+                d3.select(`#link-${nodeNames[i]}-${nodeNames[i+1]}`)
+                    .style("stroke-opacity", 1)
+                    .classed("active", true);
+            }
+        }
+
+        // Sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.querySelector('.toggle-btn');
+            sidebar.classList.toggle('collapsed');
+            toggleBtn.classList.toggle('collapsed');
+            
+            // Resize visualization
+            setTimeout(() => {
+                const newWidth = sidebar.classList.contains('collapsed') ? 
+                    window.innerWidth : window.innerWidth - 400;
+                svg.attr("width", newWidth);
+                g.attr("transform", `translate(${newWidth/2},${height/2})`);
+            }, 300);
+        }
+
+        // Initial state
+        showPattern('all');
+        
+        // Add animation
+        node
+            .style("opacity", 0)
+            .transition()
+            .duration(1000)
+            .delay((d, i) => i * 50)
+            .style("opacity", 1);
+            
+        link
+            .style("stroke-dasharray", function() { return this.getTotalLength(); })
+            .style("stroke-dashoffset", function() { return this.getTotalLength(); })
+            .transition()
+            .duration(1500)
+            .delay((d, i) => i * 30)
+            .style("stroke-dashoffset", 0);
+    </script>
+</body>
+</html>
